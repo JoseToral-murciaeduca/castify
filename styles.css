@@ -726,3 +726,12 @@ body.cinema-active nav a.active {
   }
   .film-grain-overlay { display: none; }
 }
+
+/* ── 24. Asegurar que elemento video sea visible y no colapse ─────────────────────── */
+video:not(.hidden) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background-color: #000000;
+}

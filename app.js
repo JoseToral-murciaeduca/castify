@@ -57,6 +57,8 @@ const PlayerEngine = {
 
     inactiveEl.pause();
     inactiveEl.src = '';
+    
+    this.videoEl.classList.toggle('hidden', !isVideo);
 
     if (this._hls) { this._hls.destroy(); this._hls = null; }
 
