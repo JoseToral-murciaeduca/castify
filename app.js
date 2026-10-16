@@ -400,9 +400,9 @@ const Renderer = {
 
 const CinemaStream = {
   init() {
-    if (window.CinemaPlayer) {
+    if (window.cinemaPlayer) {
       window.cinemaPlayer.init();
-      this.PlayerEngine = window.cinemaPlayer;
+      this.player = window.cinemaPlayer;
     }
 
     Navigation.init();
@@ -440,8 +440,8 @@ const CinemaStream = {
   playItem(id) {
     const all = [...DATA.tvChannels, ...DATA.radioStations, ...DATA.podcasts];
     const item = all.find(i => i.id === id);
-    if (item && window.cinemaPlayer) {
-      window.cinemaPlayer.playChannel(item, all, all.indexOf(item));
+    if (item) {
+      PlayerEngine.play(item, all, all.indexOf(item));
     }
   },
 
