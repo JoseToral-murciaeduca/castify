@@ -758,7 +758,8 @@
           </button>
           <input type="range" id="player-volume" min="0" max="100" value="80"
                  class="w-20 h-1 rounded-full accent-cinema-amber cursor-pointer"
-                 aria-label="Volumen del reproductor" />
+                 aria-label="Volumen del reproductor"
+                 oninput="PlayerEngine.setVolume(this.value)"/>
         </div>
 
         <button class="player-btn hidden md:flex" id="btn-fullscreen" onclick="CinemaStream.player.requestFullscreen()" aria-label="Pantalla completa">
