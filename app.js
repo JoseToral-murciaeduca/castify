@@ -418,6 +418,10 @@ const CinemaStream = {
     if (radioGrid) radioGrid.innerHTML = DATA.radioStations.map(Renderer.renderCard).join('');
     if (podcastList) podcastList.innerHTML = DATA.podcasts.map(Renderer.renderCard).join('');
   },
+  
+  navigateTo(sectionId) {
+    Navigation.navigateTo(sectionId);
+  },
 
   player: {
     togglePlay() {
