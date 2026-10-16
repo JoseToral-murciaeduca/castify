@@ -1,5 +1,5 @@
 /**
- * CinemaStream — app.js
+ * Castify — app.js
  * Arquitectura modular: cada módulo es un objeto de configuración
  * con responsabilidad única. No depende de frameworks externos.
  */
@@ -170,10 +170,10 @@ const Utils = {
   /** Escapa HTML para evitar XSS */
   escapeHtml(str) {
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
   },
 
   /** Determina si una URL es de tipo video */
@@ -247,7 +247,7 @@ const PlayerEngine = {
 
   _bindEvents(el) {
     ['timeupdate', 'ended', 'pause', 'play', 'error'].forEach(evt =>
-      el.removeEventListener(evt, this._handlers?.[evt])
+        el.removeEventListener(evt, this._handlers?.[evt])
     );
 
     this._handlers = {
@@ -295,6 +295,7 @@ const PlayerEngine = {
     const thumbWrap = document.getElementById('player-thumb-wrap');
     const thumbImg  = document.getElementById('player-thumb');
     const defIcon   = document.getElementById('player-default-icon');
+    const currentProg = EPGEngine.getNowPlaying(item.tvgId, item.title);
 
     if (item.thumb || item.logo || item.artwork) {
       thumbImg.src = item.thumb || item.logo || item.artwork;
@@ -304,6 +305,15 @@ const PlayerEngine = {
     } else {
       thumbImg.classList.add('hidden');
       defIcon.classList.remove('hidden');
+    }
+    
+    // Update EPG info if available
+    if (currentProg) {
+      document.getElementById('player-subtitle').textContent = 
+          `AHORA: ${currentProg.title} (${Utils.formatTime((currentProg.stop - new Date()) / 1000)} restantes)`;
+    } else {
+      document.getElementById('player-subtitle').textContent = 
+          item.subtitle || item.group || '';
     }
 
     // Now playing pill in header
@@ -710,8 +720,8 @@ const M3UModule = {
     document.getElementById('m3u-playlist-title').textContent = title;
     const container = document.getElementById('m3u-playlist-items');
     container.innerHTML = this._playlist
-      .map((item, i) => Renderer.m3uItem(item, i, this._playlist))
-      .join('');
+        .map((item, i) => Renderer.m3uItem(item, i, this._playlist))
+        .join('');
     document.getElementById('m3u-playlist-container')?.classList.remove('hidden');
   },
 
@@ -800,204 +810,122 @@ const SearchModule = {
     if (!query) { this._clearSearch(); return; }
     const q = query.toLowerCase();
     const results = this._allItems.filter(item =>
-      item.title.toLowerCase().includes(q) ||
-      (item.category || item.genre || item.show || '').toLowerCase().includes(q)
+        (item.title && item.title.toLowerCase().includes(q)) ||
+        (item.category && item.category.toLowerCase().includes(q)) ||
+        (item.genre && item.genre.toLowerCase().includes(q)) ||
+        (item.show && item.show.toLowerCase().includes(q))
     );
-    console.info(`Search: "${query}" → ${results.length} results`);
-    // For brevity: show toast with count; could open a results panel
-    if (results.length === 0) {
-      Utils.showToast(`Sin resultados para "${query}"`, 'info');
+    this._renderResults(results);
+  },
+
+  _renderResults(results) {
+    let container = document.getElementById('search-results-dropdown');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'search-results-dropdown';
+      container.className = 'absolute top-full left-0 right-0 mt-2 bg-cinema-surface border border-cinema-border rounded-xl shadow-2xl max-h-96 overflow-y-auto z-50 p-2 divide-y divide-cinema-border/50';
+      document.getElementById('global-search')?.parentElement?.appendChild(container);
     }
+    if (results.length === 0) {
+      container.innerHTML = `<div class="p-4 text-center text-sm text-cinema-muted">No se encontraron resultados</div>`;
+      container.classList.remove('hidden');
+      return;
+    }
+    container.innerHTML = results.slice(0, 8).map(item => `
+      <div class="flex items-center gap-3 p-2.5 rounded-lg hover:bg-cinema-card cursor-pointer transition-colors"
+           onclick="SearchModule._selectResult('${item.id}', '${item.type || 'audio'}')">
+        <img src="${item.thumb || item.logo || item.artwork || 'https://placehold.co/40x40'}" alt="" class="w-10 h-10 rounded object-cover flex-shrink-0" />
+        <div class="overflow-hidden">
+          <p class="text-sm font-medium text-cinema-text truncate">${Utils.escapeHtml(item.title)}</p>
+          <p class="text-xs text-cinema-muted truncate">${Utils.escapeHtml(item.category || item.genre || item.show || '')}</p>
+        </div>
+      </div>
+    `).join('');
+    container.classList.remove('hidden');
   },
 
-  _clearSearch() { /* restore normal view */ },
+  _selectResult(id, type) {
+    const item = this._allItems.find(i => i.id === id);
+    if (!item) return;
+    PlayerEngine.play(item, this._allItems, this._allItems.indexOf(item));
+    this._clearSearch();
+  },
+
+  _clearSearch() {
+    const container = document.getElementById('search-results-dropdown');
+    if (container) container.classList.add('hidden');
+    const input = document.getElementById('global-search');
+    if (input) input.value = '';
+  },
 };
 
 /* ══════════════════════════════════════════════════════════
-   11. BARRA DE PROGRESO (interactiva)
-══════════════════════════════════════════════════════════ */
-const ProgressBar = {
-  init() {
-    const container = document.getElementById('progress-bar-container');
-    if (!container) return;
-
-    container.addEventListener('click', (e) => {
-      const rect = container.getBoundingClientRect();
-      const pct  = ((e.clientX - rect.left) / rect.width) * 100;
-      PlayerEngine.seekTo(pct);
-    });
-
-    container.addEventListener('keydown', (e) => {
-      const el = PlayerEngine._getActiveElement();
-      if (!el?.duration) return;
-      if (e.key === 'ArrowRight') PlayerEngine.seekTo(Math.min(100, (el.currentTime / el.duration * 100) + 5));
-      if (e.key === 'ArrowLeft')  PlayerEngine.seekTo(Math.max(0,   (el.currentTime / el.duration * 100) - 5));
-    });
-  },
-};
-
-/* ══════════════════════════════════════════════════════════
-   12. INICIALIZACIÓN PRINCIPAL — CinemaStream
+   11. CONTROLADOR PRINCIPAL (CinemaStream)
 ══════════════════════════════════════════════════════════ */
 const CinemaStream = {
-
-  player: PlayerEngine,
-
   init() {
-    // 1. Renderizar contenido de datos
-    this._renderTVChannels();
-    this._renderRadioStations();
-    this._renderPodcasts();
-    this._renderFeaturedChannels();
-
-    // 2. Inicializar módulos
     Navigation.init();
     M3UModule.init();
     SettingsModule.init();
     SearchModule.init();
-    ProgressBar.init();
-    this._initFilterPills();
-    this._initNowPlayingPill();
-
-    // 3. Keyboard shortcuts
-    this._initKeyboardShortcuts();
-
-    console.log('%c🎬 CinemaStream iniciado', 'color:#F5A623;font-size:14px;font-weight:bold;');
+    this._renderHome();
+    this._renderLiveTV();
+    this._renderRadio();
+    this._renderPodcasts();
+    console.info('[CinemaStream] ✓ Aplicación inicializada correctamente.');
   },
 
-  // ── Renderers ────────────────────────────────────────
-
-  _renderTVChannels() {
-    const grid = document.getElementById('tv-channels-grid');
-    if (!grid) return;
-    grid.innerHTML = DATA.tvChannels.map((ch, i) =>
-      Renderer.contentCard(ch, DATA.tvChannels)
-    ).join('');
+  _renderHome() {
+    // Render featured or home sections if needed
   },
 
-  _renderRadioStations() {
-    const grid = document.getElementById('radio-grid');
-    if (!grid) return;
-    grid.innerHTML = DATA.radioStations.map((st, i) =>
-      Renderer.contentCard({ ...st, thumb: st.logo }, DATA.radioStations)
-    ).join('');
+  _renderLiveTV() {
+    const container = document.getElementById('tv-grid');
+    if (container) {
+      container.innerHTML = DATA.tvChannels.map(ch => Renderer.contentCard(ch, DATA.tvChannels)).join('');
+    }
+  },
+
+  _renderRadio() {
+    const container = document.getElementById('radio-grid');
+    if (container) {
+      container.innerHTML = DATA.radioStations.map(st => Renderer.contentCard(st, DATA.radioStations)).join('');
+    }
   },
 
   _renderPodcasts() {
-    const list = document.getElementById('podcasts-list');
-    if (!list) return;
-    list.innerHTML = DATA.podcasts.map((p, i) =>
-      Renderer.podcastItem(p, DATA.podcasts)
-    ).join('');
+    const container = document.getElementById('podcast-list');
+    if (container) {
+      container.innerHTML = DATA.podcasts.map(pod => Renderer.podcastItem(pod, DATA.podcasts)).join('');
+    }
   },
-
-  _renderFeaturedChannels() {
-    const grid = document.getElementById('featured-channels');
-    if (!grid) return;
-    grid.innerHTML = DATA.tvChannels.slice(0, 3).map((ch, i) =>
-      Renderer.contentCard(ch, DATA.tvChannels)
-    ).join('');
-  },
-
-  // ── Acciones públicas ─────────────────────────────────
-
-  navigateTo(section) { Navigation.navigateTo(section); },
 
   playItem(id, type) {
-    let item, playlist;
-    if (type === 'video') {
-      item     = DATA.tvChannels.find(c => c.id === id);
-      playlist = DATA.tvChannels;
-    } else if (type === 'audio') {
-      item     = DATA.radioStations.find(s => s.id === id);
-      playlist = DATA.radioStations;
-    } else if (type === 'podcast') {
-      item     = DATA.podcasts.find(p => p.id === id);
-      playlist = DATA.podcasts;
+    let list = [];
+    if (type === 'video' || DATA.tvChannels.some(c => c.id === id)) list = DATA.tvChannels;
+    else if (DATA.radioStations.some(r => r.id === id)) list = DATA.radioStations;
+    else if (DATA.podcasts.some(p => p.id === id)) list = DATA.podcasts;
+
+    const index = list.findIndex(i => i.id === id);
+    if (index !== -1) {
+      PlayerEngine.play(list[index], list, index);
     }
-    if (!item) return;
-
-    // Normalize item for player
-    const normalized = {
-      ...item,
-      thumb:    item.thumb || item.logo || item.artwork || '',
-      subtitle: item.category || item.genre || item.show || '',
-    };
-    const normalizedPlaylist = playlist.map(it => ({
-      ...it,
-      thumb:    it.thumb || it.logo || it.artwork || '',
-      subtitle: it.category || it.genre || it.show || '',
-    }));
-
-    PlayerEngine.play(normalized, normalizedPlaylist, playlist.indexOf(item));
   },
 
-  playM3UItem(index) { M3UModule.playItem(index); },
+  playM3UItem(index) {
+    M3UModule.playItem(index);
+  },
 
-  async loadM3UFromUrl() {
+  loadM3UFromUrl() {
     const url = document.getElementById('m3u-url-input')?.value.trim();
-    await M3UModule.loadFromUrl(url);
-  },
-
-  clearM3UPlaylist() { M3UModule.clearPlaylist(); },
-
-  // ── Filter Pills ─────────────────────────────────────
-
-  _initFilterPills() {
-    document.querySelectorAll('[role="group"] .filter-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        const group = pill.closest('[role="group"]');
-        group.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
-        pill.classList.add('active');
-      });
-    });
-  },
-
-  // ── Now Playing Pill ──────────────────────────────────
-
-  _initNowPlayingPill() {
-    document.getElementById('now-playing-pill')?.addEventListener('click', () => {
-      // Scroll to player bar visually
-      document.getElementById('player-bar')?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    });
-  },
-
-  // ── Keyboard Shortcuts ────────────────────────────────
-
-  _initKeyboardShortcuts() {
-    document.addEventListener('keydown', (e) => {
-      // Ignore when typing in inputs
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
-
-      switch (e.key) {
-        case ' ':
-          e.preventDefault();
-          PlayerEngine.togglePlay();
-          break;
-        case 'ArrowRight':
-          if (!e.altKey) { e.preventDefault(); PlayerEngine.next(); }
-          break;
-        case 'ArrowLeft':
-          if (!e.altKey) { e.preventDefault(); PlayerEngine.prev(); }
-          break;
-        case 'm':
-        case 'M':
-          PlayerEngine.toggleMute();
-          break;
-        case 'f':
-        case 'F':
-          PlayerEngine.requestFullscreen();
-          break;
-      }
-    });
-  },
+    M3UModule.loadFromUrl(url);
+    if (result.epgUrl) {
+      EPGEngine.loadEPG(result.epgUrl);
+    }
+  }
 };
 
-/* ══════════════════════════════════════════════════════════
-   BOOTSTRAP — ejecutar cuando el DOM esté listo
-══════════════════════════════════════════════════════════ */
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => CinemaStream.init());
-} else {
+// Inicializar al cargar el DOM
+document.addEventListener('DOMContentLoaded', () => {
   CinemaStream.init();
-}
+});

@@ -1,7 +1,7 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
- * ║  CinemaStream · player/playlist-ui.js                           ║
- * ║  Interfaz de la Playlist y el Importador M3U                    ║
+ * ║  Castify · player/playlist-ui.js                                 ║
+ * ║  Interfaz de la Playlist y el Importador M3U                     ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║  Responsabilidades:                                              ║
  * ║   1. Importador M3U: URL + Archivo + Drag & Drop                 ║
@@ -29,6 +29,7 @@ class PlaylistUI {
     this._activeGroup   = 'all'; // Grupo seleccionado ('all' = todos)
     this._searchQuery   = '';    // Texto de búsqueda actual
     this._isLoading     = false; // ¿Está cargando una lista?
+    this._epgUrl        = '';    // <--- MODIFICACIÓN: URL EPG global extraída de la lista
 
     /* ── Referencias DOM ──────────────────────────────────── */
     this._dom = {};
@@ -115,26 +116,22 @@ class PlaylistUI {
     /* ── Drag & Drop ─────────────────────────────────────── */
     const dz = this._dom.dropZone;
     if (dz) {
-      // Prevenir comportamiento por defecto del navegador (abrir el archivo)
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
         dz.addEventListener(evt, (e) => { e.preventDefault(); e.stopPropagation(); });
       });
 
-      // Resaltar la zona mientras el archivo está sobre ella
       dz.addEventListener('dragenter', () => dz.classList.add('drag-over'));
       dz.addEventListener('dragover',  () => dz.classList.add('drag-over'));
       dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
 
-      // Soltar el archivo → iniciar importación
       dz.addEventListener('drop', (e) => {
         dz.classList.remove('drag-over');
         const file = e.dataTransfer.files[0];
         if (file) {
           this._importFromFile(file);
         } else {
-          // ¿Se arrastró una URL? (ej. desde la barra de direcciones)
           const url = e.dataTransfer.getData('text/uri-list')
-                   || e.dataTransfer.getData('text/plain');
+              || e.dataTransfer.getData('text/plain');
           if (url && url.startsWith('http')) {
             if (this._dom.urlInput) this._dom.urlInput.value = url;
             this._importFromUrl(url);
@@ -142,30 +139,22 @@ class PlaylistUI {
         }
       });
 
-      // Clic en el drop-zone → disparar el input de archivo
       dz.addEventListener('click', () => this._dom.fileInput?.click());
       dz.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') this._dom.fileInput?.click();
       });
     }
 
-    /* ── Botón de limpiar ─────────────────────────────────── */
     this._dom.btnClearPlaylist?.addEventListener('click', () => this._clearPlaylist());
   }
 
-  /**
-   * Alterna entre los paneles de importación (URL / Archivo).
-   * @param {'url'|'file'} target
-   */
   _switchImportTab(target) {
-    // Actualizar estado visual de los tabs
     this._dom.tabs?.forEach(t => {
       const isActive = t.dataset.target === target;
       t.classList.toggle('active', isActive);
       t.setAttribute('aria-selected', String(isActive));
     });
 
-    // Mostrar/ocultar paneles
     this._dom.panelUrl?.classList.toggle('hidden',  target !== 'url');
     this._dom.panelFile?.classList.toggle('hidden', target !== 'file');
   }
@@ -173,19 +162,20 @@ class PlaylistUI {
   /* ── Importar desde URL ─────────────────────────────────── */
   async _importFromUrl(url) {
     if (!url) {
-      this._showStatus('error', '⚠ Introduce una URL válida (http:// o https://)');
+      this._showStatus('error', '⚠ Introduce una URL válida (http:// or https://)');
       return;
     }
 
     this._setLoadingState(true, 'Conectando al servidor…');
 
     try {
-      /* Llama al M3UParser global (definido en m3u-parser.js) */
-      const channels = await window.M3UParser.fromUrl(url, (msg) => {
+      /* <--- MODIFICACIÓN: El parser ahora devuelve un objeto { epgUrl, channels } */
+      const result = await window.M3UParser.fromUrl(url, (msg) => {
         this._showStatus('loading', msg);
       });
 
-      this._loadChannels(channels, `Lista desde URL (${channels.length} canales)`);
+      this._epgUrl = result.epgUrl || '';
+      this._loadChannels(result.channels, `Lista desde URL (${result.channels.length} canales)`);
 
     } catch (err) {
       this._showStatus('error', `✗ ${err.message}`);
@@ -200,18 +190,19 @@ class PlaylistUI {
     this._setLoadingState(true, `Leyendo "${file.name}"…`);
 
     try {
-      const channels = await window.M3UParser.fromFile(file, (msg) => {
+      /* <--- MODIFICACIÓN: El parser ahora devuelve un objeto { epgUrl, channels } */
+      const result = await window.M3UParser.fromFile(file, (msg) => {
         this._showStatus('loading', msg);
       });
 
-      this._loadChannels(channels, `${file.name} · ${channels.length} canales`);
+      this._epgUrl = result.epgUrl || '';
+      this._loadChannels(result.channels, `${file.name} · ${result.channels.length} canales`);
 
     } catch (err) {
       this._showStatus('error', `✗ ${err.message}`);
       console.error('[PlaylistUI] Error al leer archivo:', err);
     } finally {
       this._setLoadingState(false);
-      // Resetear el input para poder cargar el mismo archivo de nuevo
       if (this._dom.fileInput) this._dom.fileInput.value = '';
     }
   }
@@ -221,56 +212,36 @@ class PlaylistUI {
      SECCIÓN 3 · GESTIÓN DE LA PLAYLIST
   ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Carga los canales parseados en la UI.
-   * Punto de entrada común para carga por URL y por archivo.
-   *
-   * @param {Array}  channels - Array de objetos M3UChannel
-   * @param {string} label    - Texto a mostrar como título de la lista
-   */
   _loadChannels(channels, label) {
     this._allChannels = channels;
     this._filtered    = [...channels];
     this._activeGroup = 'all';
     this._searchQuery = '';
 
-    // Mostrar la sección de playlist (estaba oculta)
     this._dom.playlistWrap?.classList.remove('hidden');
 
-    // Limpiar filtro de búsqueda
     if (this._dom.searchInput) this._dom.searchInput.value = '';
 
-    // Poblar el desplegable de grupos
     this._buildGroupFilter(channels);
-
-    // Renderizar la lista
     this._renderChannelList(channels);
-
-    // Actualizar contador
     this._updateChannelCount(channels.length, channels.length);
 
     this._showStatus('success', `✓ ${label}`);
-    console.info(`[PlaylistUI] Cargados ${channels.length} canales.`);
+    console.info(`[PlaylistUI] Cargados ${channels.length} canales. EPG URL: ${this._epgUrl || 'Ninguna'}`);
 
-    // Mostrar la sección del reproductor
     this._dom.playerSection?.classList.remove('hidden');
   }
 
-  /**
-   * Limpia toda la playlist y resetea el estado.
-   */
   _clearPlaylist() {
     this._allChannels = [];
     this._filtered    = [];
+    this._epgUrl      = '';
 
-    // Detener reproducción
     window.cinemaPlayer?._stopCurrentPlayback?.();
 
-    // Ocultar secciones
     this._dom.playlistWrap?.classList.add('hidden');
     this._dom.playerSection?.classList.add('hidden');
 
-    // Limpiar inputs
     if (this._dom.urlInput)  this._dom.urlInput.value  = '';
     if (this._dom.searchInput) this._dom.searchInput.value = '';
 
@@ -278,23 +249,17 @@ class PlaylistUI {
     document.title = 'CinemaStream';
   }
 
-  /**
-   * Construye el menú desplegable de filtro por grupo.
-   * @param {Array} channels
-   */
   _buildGroupFilter(channels) {
     if (!this._dom.groupFilter) return;
 
-    // Obtener grupos únicos ordenados
     const groups = [...new Set(channels.map(c => c.group).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
 
-    // Reconstruir las opciones del select
     this._dom.groupFilter.innerHTML = `
       <option value="all">Todos los grupos (${channels.length})</option>
       ${groups.map(g => {
-        const count = channels.filter(c => c.group === g).length;
-        return `<option value="${this._escapeAttr(g)}">${this._escapeHtml(g)} (${count})</option>`;
-      }).join('')}
+      const count = channels.filter(c => c.group === g).length;
+      return `<option value="${this._escapeAttr(g)}">${this._escapeHtml(g)} (${count})</option>`;
+    }).join('')}
     `;
   }
 
@@ -304,19 +269,15 @@ class PlaylistUI {
   ══════════════════════════════════════════════════════════ */
 
   _bindPlaylistEvents() {
-
-    /* ── Búsqueda en tiempo real ─────────────────────────── */
     let debounceTimer;
     this._dom.searchInput?.addEventListener('input', () => {
       clearTimeout(debounceTimer);
-      // Esperar 200ms después de que el usuario deje de escribir
       debounceTimer = setTimeout(() => {
         this._searchQuery = this._dom.searchInput.value.trim();
         this._applyFilters();
       }, 200);
     });
 
-    // Limpiar búsqueda con Escape
     this._dom.searchInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         this._dom.searchInput.value = '';
@@ -325,23 +286,20 @@ class PlaylistUI {
       }
     });
 
-    /* ── Filtro por grupo ─────────────────────────────────── */
     this._dom.groupFilter?.addEventListener('change', () => {
       this._activeGroup = this._dom.groupFilter.value;
       this._applyFilters();
     });
 
-    /* ── Ordenar alfabéticamente ─────────────────────────── */
     let isSorted = false;
     this._dom.btnSortAlpha?.addEventListener('click', () => {
       isSorted = !isSorted;
       if (isSorted) {
         this._filtered = [...this._filtered].sort((a, b) =>
-          a.title.localeCompare(b.title, 'es')
+            a.title.localeCompare(b.title, 'es')
         );
       } else {
-        // Restaurar orden original
-        this._applyFilters(false); // false = no re-renderizar el filtro, solo restaurar orden
+        this._applyFilters(false);
         return;
       }
       this._renderChannelList(this._filtered);
@@ -349,11 +307,7 @@ class PlaylistUI {
     });
   }
 
-  /**
-   * Aplica los filtros activos (búsqueda + grupo) a la lista completa.
-   */
   _applyFilters() {
-    /* ── Usar el parser para filtrar ─────────────────────── */
     this._filtered = window.M3UParser.filter(this._allChannels, {
       query: this._searchQuery,
       group: this._activeGroup === 'all' ? '' : this._activeGroup,
@@ -368,20 +322,9 @@ class PlaylistUI {
      SECCIÓN 5 · RENDERIZADO DE LA LISTA
   ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Renderiza la lista de canales en el DOM.
-   * Agrupa los canales por categoría con encabezados colapsables.
-   *
-   * Estrategia de renderizado:
-   *  - DocumentFragment para una sola inserción en el DOM
-   *    (evitar reflows en cada elemento)
-   *
-   * @param {Array} channels - Canales filtrados a mostrar
-   */
   _renderChannelList(channels) {
     if (!this._dom.channelList) return;
 
-    /* ── Sin resultados ──────────────────────────────────── */
     if (channels.length === 0) {
       this._dom.channelList.innerHTML = `
         <div class="flex flex-col items-center gap-3 py-12 text-cinema-muted">
@@ -395,14 +338,10 @@ class PlaylistUI {
       return;
     }
 
-    /* ── Agrupar los canales por group-title ─────────────── */
     const grouped = window.M3UParser.groupBy(channels);
-
-    /* ── Usar DocumentFragment para inserción eficiente ──── */
     const fragment = document.createDocumentFragment();
 
     grouped.forEach((groupChannels, groupName) => {
-      // ── Encabezado del grupo ──────────────────────────────
       const groupHeader = document.createElement('div');
       groupHeader.className = 'playlist-group-header';
       groupHeader.innerHTML = `
@@ -421,7 +360,6 @@ class PlaylistUI {
           <span class="text-cinema-border">${groupChannels.length}</span>
         </button>`;
 
-      // Hacer colapsable el grupo al hacer clic
       groupHeader.querySelector('.playlist-group-btn').addEventListener('click', (e) => {
         const btn      = e.currentTarget;
         const isOpen   = btn.getAttribute('aria-expanded') === 'true';
@@ -432,7 +370,6 @@ class PlaylistUI {
 
       fragment.appendChild(groupHeader);
 
-      // ── Lista de canales del grupo ─────────────────────
       const groupList = document.createElement('ul');
       groupList.id = `group-${this._sanitizeId(groupName)}`;
       groupList.className = 'playlist-group-list space-y-0.5 pb-1';
@@ -446,23 +383,14 @@ class PlaylistUI {
       fragment.appendChild(groupList);
     });
 
-    /* ── Insertar todo el fragmento de una vez ───────────── */
     this._dom.channelList.innerHTML = '';
     this._dom.channelList.appendChild(fragment);
 
-    /* ── Resaltar canal activo si existe ─────────────────── */
     if (this._activeId) {
       this._highlightActiveChannel(this._activeId);
     }
   }
 
-  /**
-   * Construye el elemento <li> de un canal individual.
-   * Se usa createElement en lugar de innerHTML para mayor seguridad (XSS).
-   *
-   * @param {Object} channel - Objeto M3UChannel
-   * @returns {HTMLElement}
-   */
   _buildChannelItem(channel) {
     const li = document.createElement('li');
     li.className = 'playlist-item';
@@ -471,7 +399,6 @@ class PlaylistUI {
     li.setAttribute('tabindex', '0');
     li.setAttribute('aria-label', `Reproducir ${channel.title}`);
 
-    /* ── Icono/Logo ─────────────────────────────────────── */
     const logoEl = document.createElement('div');
     logoEl.className = 'playlist-item-logo';
     if (channel.logo) {
@@ -485,24 +412,21 @@ class PlaylistUI {
       logoEl.appendChild(this._buildDefaultIcon(channel.streamType));
     }
 
-    /* ── Información ────────────────────────────────────── */
     const infoEl = document.createElement('div');
     infoEl.className = 'playlist-item-info';
 
     const titleEl = document.createElement('p');
     titleEl.className    = 'playlist-item-title';
     titleEl.textContent  = channel.title;
-    titleEl.title        = channel.title; // tooltip
+    titleEl.title        = channel.title;
 
     infoEl.appendChild(titleEl);
 
-    /* ── Badge de tipo ──────────────────────────────────── */
     const badgeEl = document.createElement('span');
     badgeEl.className = `playlist-item-badge ${channel.streamType}`;
     const badgeText = { hls: 'HLS', video: 'VID', audio: 'AUD', unknown: '?' };
     badgeEl.textContent = badgeText[channel.streamType] ?? '?';
 
-    /* ── Botón de play ──────────────────────────────────── */
     const playBtn = document.createElement('button');
     playBtn.className = 'playlist-item-play-btn';
     playBtn.innerHTML = `
@@ -511,10 +435,8 @@ class PlaylistUI {
       </svg>`;
     playBtn.setAttribute('aria-label', `Reproducir ${channel.title}`);
 
-    /* ── Ensamblar el elemento ──────────────────────────── */
     li.append(logoEl, infoEl, badgeEl, playBtn);
 
-    /* ── Eventos de reproducción ────────────────────────── */
     const playFn = () => this._playChannel(channel);
     li.addEventListener('click',   playFn);
     li.addEventListener('keydown', (e) => {
@@ -524,11 +446,6 @@ class PlaylistUI {
     return li;
   }
 
-  /**
-   * Construye un icono SVG por defecto según el tipo de stream.
-   * @param {string} type - 'hls' | 'video' | 'audio' | 'unknown'
-   * @returns {SVGElement}
-   */
   _buildDefaultIcon(type) {
     const paths = {
       video:   'M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2z',
@@ -556,46 +473,29 @@ class PlaylistUI {
      SECCIÓN 6 · REPRODUCCIÓN DESDE LA PLAYLIST
   ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Inicia la reproducción de un canal.
-   * Pasa la playlist completa (sin filtrar) al reproductor para poder
-   * navegar con prev/next sin limitarse al filtro activo.
-   *
-   * @param {Object} channel
-   */
   _playChannel(channel) {
     this._activeId = channel.id;
 
-    // El índice en la playlist completa (no en la filtrada)
     const idx = this._allChannels.findIndex(c => c.id === channel.id);
 
-    /* ── Delegar al motor de reproducción global ─────────── */
     if (window.cinemaPlayer) {
       window.cinemaPlayer.playChannel(channel, this._allChannels, idx);
     } else {
       console.error('[PlaylistUI] cinemaPlayer no está inicializado.');
     }
 
-    /* ── Actualizar indicador visual ─────────────────────── */
     this._highlightActiveChannel(channel.id);
 
-    /* ── Hacer scroll hasta el ítem activo ──────────────── */
     const activeEl = this._dom.channelList?.querySelector(`[data-channel-id="${channel.id}"]`);
     activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  /**
-   * Marca visualmente el canal activo en la lista.
-   * @param {string} channelId
-   */
   _highlightActiveChannel(channelId) {
-    // Quitar clase activa de todos
     this._dom.channelList?.querySelectorAll('.playlist-item').forEach(el => {
       el.classList.remove('active');
       el.removeAttribute('aria-current');
     });
 
-    // Añadir al canal activo
     const activeEl = this._dom.channelList?.querySelector(`[data-channel-id="${channelId}"]`);
     if (activeEl) {
       activeEl.classList.add('active');
@@ -608,19 +508,13 @@ class PlaylistUI {
      SECCIÓN 7 · SINCRONIZACIÓN CON EL REPRODUCTOR
   ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Suscribe esta UI a los eventos del CinemaPlayer para mantenerse
-   * sincronizada cuando se cambia de canal desde los controles del player.
-   */
   _bindPlayerEvents() {
-    // Esperamos a que cinemaPlayer esté disponible
     const bindWhenReady = () => {
       if (!window.cinemaPlayer) {
         setTimeout(bindWhenReady, 100);
         return;
       }
 
-      /* ── Canal cambiado (desde controles del player) ────── */
       window.cinemaPlayer.on('channelChange', (channel) => {
         if (channel?.id && channel.id !== this._activeId) {
           this._activeId = channel.id;
@@ -628,11 +522,9 @@ class PlaylistUI {
         }
       });
 
-      /* ── Canal siguiente/anterior ─────────────────────── */
       window.cinemaPlayer.on('channelNext', (ch) => { if (ch) this._highlightActiveChannel(ch.id); });
       window.cinemaPlayer.on('channelPrev', (ch) => { if (ch) this._highlightActiveChannel(ch.id); });
 
-      /* ── Actualizar la barra inferior de la app ─────────── */
       window.cinemaPlayer.on('uiUpdate', (channel) => {
         this._syncGlobalPlayerBar(channel);
       });
@@ -641,11 +533,6 @@ class PlaylistUI {
     bindWhenReady();
   }
 
-  /**
-   * Sincroniza la barra de reproducción inferior de la app
-   * con el canal que está sonando en el player embebido.
-   * @param {Object} channel
-   */
   _syncGlobalPlayerBar(channel) {
     const titleEl    = document.getElementById('player-title');
     const subtitleEl = document.getElementById('player-subtitle');
@@ -664,7 +551,6 @@ class PlaylistUI {
       defIcon?.classList.add('hidden');
     }
 
-    // Mostrar la pill y el player bar
     pill?.classList.remove('hidden');
     pill?.classList.add('flex');
     document.getElementById('player-bar')?.classList.remove('translate-y-full');
@@ -675,18 +561,12 @@ class PlaylistUI {
      SECCIÓN 8 · FEEDBACK DE ESTADO
   ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Muestra un mensaje de estado en la barra de importación.
-   * @param {'loading'|'success'|'error'|'info'} type
-   * @param {string} message
-   */
   _showStatus(type, message) {
     if (!this._dom.statusBar || !this._dom.statusText) return;
 
     this._dom.statusBar.classList.remove('hidden');
     this._dom.statusText.textContent = message;
 
-    // Colores por tipo de estado
     const colors = {
       loading: 'text-cinema-amber',
       success: 'text-green-400',
@@ -695,28 +575,22 @@ class PlaylistUI {
     };
     this._dom.statusText.className = `text-sm ${colors[type] ?? colors.info}`;
 
-    // Auto-ocultar mensajes de éxito después de 5 segundos
     if (type === 'success') {
       setTimeout(() => this._dom.statusBar?.classList.add('hidden'), 5000);
     }
   }
 
-  /**
-   * Activa o desactiva el estado de "cargando" en el botón de importación.
-   * @param {boolean} loading
-   * @param {string}  [msg] - Mensaje a mostrar mientras carga
-   */
   _setLoadingState(loading, msg = '') {
     this._isLoading = loading;
 
     if (this._dom.btnLoadUrl) {
       this._dom.btnLoadUrl.disabled = loading;
       this._dom.btnLoadUrl.innerHTML = loading
-        ? `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          ? `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
            </svg> Cargando…`
-        : `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          : `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
            </svg> Cargar`;
@@ -725,16 +599,11 @@ class PlaylistUI {
     if (msg) this._showStatus('loading', msg);
   }
 
-  /**
-   * Actualiza el contador de canales mostrados vs total.
-   * @param {number} shown - Canales visibles tras filtros
-   * @param {number} total - Total de canales en la lista
-   */
   _updateChannelCount(shown, total) {
     if (!this._dom.channelCount) return;
     this._dom.channelCount.textContent = shown === total
-      ? `${total} canales`
-      : `${shown} de ${total} canales`;
+        ? `${total} canales`
+        : `${shown} de ${total} canales`;
   }
 
 
@@ -742,25 +611,25 @@ class PlaylistUI {
      SECCIÓN 9 · UTILIDADES PRIVADAS
   ══════════════════════════════════════════════════════════ */
 
-  /** Escapa HTML para evitar XSS al usar innerHTML */
   _escapeHtml(str) {
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
   }
 
-  /** Escapa para usar en atributos HTML */
   _escapeAttr(str) {
     return String(str).replace(/"/g, '&quot;');
   }
 
-  /** Crea un ID de elemento DOM válido a partir de un texto de grupo */
   _sanitizeId(str) {
     return String(str).toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 40);
   }
+
+  /* ── API de solo lectura para la EPG ─────────────────────── */
+  get epgUrl() { return this._epgUrl; }
 }
 
 

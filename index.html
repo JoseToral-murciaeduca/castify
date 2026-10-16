@@ -6,7 +6,7 @@
   <title>Castify — Tu Sala de Cine Digital</title>
   <meta name="description" content="Plataforma de streaming multimedia: TV en directo, Radio, Podcasts y listas M3U personalizadas." />
   <link rel="icon" href="logo.jpg" type="image/jpeg" />
-  
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -71,782 +71,525 @@
 
 <body class="bg-cinema-bg font-body text-cinema-text antialiased min-h-screen overflow-x-hidden">
 
-  <!-- ═══════════════════════════════════════════
-       CINEMATIC DIMMER OVERLAY
-  ══════════════════════════════════════════════ -->
-  
-  <script>
-    const videoplayer = document.getElementById('my-video');
-    const audioplayer = document.getElementById('my-audio');
-    
-    videoplayer.addEventListener('play',() => {
-      document.body.classList.add('cinema-active');
-    });
-    
-    videoplayer.addEventListener('pause',() => {
-      document.body.classList.remove('cinema-active');
-    });
-    
-    videoplayer.addEventListener('ended',() => {
-      document.body.classList.remove('cinema-active');
-    });
-    
-    // Evento cuando reproduce AUDIO (Radio / Podcast) -> NO activa el modo cine
-    audioplayer.addEventListener('play',() => {
-      document.body.classList.remove('cinema-active');
-    });
-    
-  </script>
+<!-- ═══════════════════════════════════════════
+     CINEMATIC DIMMER OVERLAY
+══════════════════════════════════════════════ -->
+<div id="cinematic-dimmer" class="cinematic-dimmer" aria-hidden="true"></div>
 
-  <!-- ═══════════════════════════════════════════
-       FILM GRAIN OVERLAY
-  ══════════════════════════════════════════════ -->
-  <div id="film-grain" class="film-grain-overlay pointer-events-none" aria-hidden="true"></div>
+<!-- ═══════════════════════════════════════════
+     FILM GRAIN OVERLAY
+══════════════════════════════════════════════ -->
+<div id="film-grain" class="film-grain-overlay pointer-events-none" aria-hidden="true"></div>
 
-  <!-- ═══════════════════════════════════════════
-       SIDEBAR NAVIGATION
-  ══════════════════════════════════════════════ -->
-  <aside id="sidebar"
-         class="fixed top-0 left-0 h-full w-64 bg-cinema-surface border-r border-cinema-border z-50
+<!-- ═══════════════════════════════════════════
+     SIDEBAR NAVIGATION
+══════════════════════════════════════════════ -->
+<aside id="sidebar"
+       class="fixed top-0 left-0 h-full w-64 bg-cinema-surface border-r border-cinema-border z-50
                 flex flex-col transition-transform duration-300 ease-in-out
                 -translate-x-full lg:translate-x-0"
-         role="navigation" aria-label="Menú principal">
+       role="navigation" aria-label="Menú principal">
 
-    <!-- Logo -->
-    <div class="p-6 border-b border-cinema-border">
-      <a href="#" class="flex items-center gap-3 group" aria-label="Castify inicio">
-        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cinema-amber to-cinema-accent
+  <!-- Logo -->
+  <div class="p-6 border-b border-cinema-border">
+    <a href="#" class="flex items-center gap-3 group" aria-label="Castify inicio">
+      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-cinema-amber to-cinema-accent
                     flex items-center justify-center shadow-amber-sm group-hover:shadow-amber-glow
-                    transition-all duration-300">
-          <!--<svg class="w-5 h-5 text-cinema-bg" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2zM8 17H6v-2h2v2zm0-4H6v-2h2v2zm0-4H6V7h2v2zm10 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/>
-          </svg>-->
-          <img src="logo.jpg" alt="Logo">
-        </div>
-        <div>
-          <span class="font-display text-lg font-semibold text-cinema-warm tracking-wide">Castify</span>
-        </div>
-      </a>
-    </div>
-
-    <!-- Nav links -->
-    <nav class="flex-1 p-4 space-y-1 overflow-y-auto" role="menubar">
-      <button class="nav-item active w-full" data-section="home" role="menuitem">
-        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-        <span>Inicio</span>
-      </button>
-
-      <button class="nav-item w-full" data-section="live-tv" role="menuitem">
-        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.868v6.264a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
-        <span>TV en Directo</span>
-        <span class="live-badge">EN VIVO</span>
-      </button>
-
-      <button class="nav-item w-full" data-section="radio" role="menuitem">
-        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-        <span>Radio</span>
-      </button>
-
-      <button class="nav-item w-full" data-section="podcasts" role="menuitem">
-        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-        <span>Podcasts</span>
-      </button>
-
-      <button class="nav-item w-full" data-section="m3u-player" role="menuitem">
-        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-        <span>Lista M3U/M3U8</span>
-      </button>
-
-      <div class="pt-4 border-t border-cinema-border mt-4">
-        <button class="nav-item w-full" data-section="settings" role="menuitem">
-          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <span>Ajustes</span>
-        </button>
+                    transition-all duration-300 overflow-hidden">
+        <img src="logo.jpg" alt="Logo" class="w-full h-full object-cover">
       </div>
-    </nav>
+      <div>
+        <span class="font-display text-lg font-semibold text-cinema-warm tracking-wide">Castify</span>
+      </div>
+    </a>
+  </div>
 
-    <!-- Footer sidebar -->
-    <div class="p-4 border-t border-cinema-border text-xs text-cinema-muted text-center">
-      <p class="font-display italic">«El cine es un espejo»</p>
-      <p class="mt-1">v1.0.0 · Castify</p>
+  <!-- Nav links -->
+  <nav class="flex-1 p-4 space-y-1 overflow-y-auto" role="menubar">
+    <button class="nav-item active w-full" data-section="home" role="menuitem">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      <span>Inicio</span>
+    </button>
+
+    <button class="nav-item w-full" data-section="live-tv" role="menuitem">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.868v6.264a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
+      <span>TV en Directo</span>
+      <span class="live-badge">EN VIVO</span>
+    </button>
+
+    <button class="nav-item w-full" data-section="radio" role="menuitem">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      <span>Radio</span>
+    </button>
+
+    <button class="nav-item w-full" data-section="podcasts" role="menuitem">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+      <span>Podcasts</span>
+    </button>
+
+    <button class="nav-item w-full" data-section="m3u-player" role="menuitem">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+      <span>Lista M3U/M3U8</span>
+    </button>
+
+    <div class="pt-4 border-t border-cinema-border mt-4">
+      <button class="nav-item w-full" data-section="settings" role="menuitem">
+        <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>Ajustes</span>
+      </button>
     </div>
-  </aside>
+  </nav>
 
-  <!-- Sidebar Backdrop (mobile) -->
-  <div id="sidebar-backdrop"
-       class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity duration-300"
-       aria-hidden="true"></div>
+  <!-- Footer sidebar -->
+  <div class="p-4 border-t border-cinema-border text-xs text-cinema-muted text-center">
+    <p class="font-display italic">«El cine es un espejo»</p>
+    <p class="mt-1">v1.0.0 · Castify</p>
+  </div>
+</aside>
 
-  <!-- ═══════════════════════════════════════════
-       MAIN LAYOUT WRAPPER
-  ══════════════════════════════════════════════ -->
-  <div class="lg:ml-64 flex flex-col min-h-screen">
+<!-- Sidebar Backdrop (mobile) -->
+<div id="sidebar-backdrop"
+     class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden backdrop-blur-sm transition-opacity duration-300"
+     aria-hidden="true"></div>
 
-    <!-- TOP HEADER -->
-    <header class="sticky top-0 z-30 bg-cinema-surface/80 backdrop-blur-xl border-b border-cinema-border
+<!-- ═══════════════════════════════════════════
+     MAIN LAYOUT WRAPPER
+══════════════════════════════════════════════ -->
+<div class="lg:ml-64 flex flex-col min-h-screen">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-30 bg-cinema-surface/80 backdrop-blur-xl border-b border-cinema-border
                    flex items-center justify-between px-4 md:px-6 h-16">
 
-      <!-- Mobile menu toggle -->
-      <button id="sidebar-toggle"
-              class="lg:hidden p-2 rounded-lg text-cinema-muted hover:text-cinema-amber hover:bg-cinema-card transition-all duration-200"
-              aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar">
-        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-        </svg>
-      </button>
+    <!-- Mobile menu toggle -->
+    <button id="sidebar-toggle"
+            class="lg:hidden p-2 rounded-lg text-cinema-muted hover:text-cinema-amber hover:bg-cinema-card transition-all duration-200"
+            aria-label="Abrir menú" aria-expanded="false" aria-controls="sidebar">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
 
-      <!-- Search -->
-      <div class="flex-1 max-w-md mx-4">
-        <div class="relative">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cinema-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <input type="search"
-                 id="global-search"
-                 placeholder="Buscar canales, podcasts..."
-                 class="w-full pl-10 pr-4 py-2 bg-cinema-card border border-cinema-border rounded-lg
+    <!-- Search -->
+    <div class="flex-1 max-w-md mx-4">
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cinema-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="search"
+               id="global-search"
+               placeholder="Buscar canales, podcasts..."
+               class="w-full pl-10 pr-4 py-2 bg-cinema-card border border-cinema-border rounded-lg
                         text-sm text-cinema-text placeholder-cinema-muted
                         focus:outline-none focus:border-cinema-amber focus:ring-1 focus:ring-cinema-amber/40
                         transition-all duration-200"
-                 aria-label="Búsqueda global" />
-        </div>
+               aria-label="Búsqueda global" />
+      </div>
+    </div>
+
+    <!-- Header right actions -->
+    <div class="flex items-center gap-2">
+      <!-- Now playing pill -->
+      <div id="now-playing-pill"
+           class="hidden items-center gap-2 px-3 py-1.5 bg-cinema-card border border-cinema-amber/30
+                    rounded-full text-xs text-cinema-amber font-medium animate-pulse-glow cursor-pointer"
+           aria-live="polite" aria-label="Reproduciendo ahora">
+        <span class="w-2 h-2 rounded-full bg-cinema-amber animate-pulse"></span>
+        <span id="now-playing-title" class="max-w-28 truncate">Reproduciendo</span>
       </div>
 
-      <!-- Header right actions -->
-      <div class="flex items-center gap-2">
-        <!-- Now playing pill -->
-        <div id="now-playing-pill"
-             class="hidden items-center gap-2 px-3 py-1.5 bg-cinema-card border border-cinema-amber/30
-                    rounded-full text-xs text-cinema-amber font-medium animate-pulse-glow cursor-pointer"
-             aria-live="polite" aria-label="Reproduciendo ahora">
-          <span class="w-2 h-2 rounded-full bg-cinema-amber animate-pulse"></span>
-          <span id="now-playing-title" class="max-w-28 truncate">Reproduciendo</span>
-        </div>
-
-        <!-- Avatar -->
-        <button class="w-9 h-9 rounded-full bg-gradient-to-br from-cinema-amber to-cinema-accent
+      <!-- Avatar -->
+      <button class="w-9 h-9 rounded-full bg-gradient-to-br from-cinema-amber to-cinema-accent
                        flex items-center justify-center text-cinema-bg font-bold text-sm
                        hover:shadow-amber-sm transition-all duration-200"
-                aria-label="Perfil de usuario">
-          CS
-        </button>
-      </div>
-    </header>
+              aria-label="Perfil de usuario">
+        CS
+      </button>
+    </div>
+  </header>
 
-    <!-- ═══════════════════════════════════════════
-         MAIN CONTENT AREA
-    ══════════════════════════════════════════════ -->
-    <main id="main-content" class="flex-1 p-4 md:p-6 lg:p-8 space-y-8 animate-fade-in">
+  <!-- ═══════════════════════════════════════════
+       MAIN CONTENT AREA
+  ══════════════════════════════════════════════ -->
+  <main id="main-content" class="flex-1 p-4 md:p-6 lg:p-8 space-y-8 animate-fade-in">
 
-      <!-- ── SECTION: HOME ─────────────────────── -->
-      <section id="section-home" class="section-panel space-y-8">
+    <!-- ── SECTION: HOME ─────────────────────── -->
+    <section id="section-home" class="section-panel space-y-8">
 
-        <!-- Hero Banner -->
-        <div class="relative rounded-2xl overflow-hidden bg-cinema-card border border-cinema-border
+      <!-- Hero Banner -->
+      <div class="relative rounded-2xl overflow-hidden bg-cinema-card border border-cinema-border
                     min-h-56 md:min-h-72 flex items-end p-6 md:p-8 group cursor-pointer"
-             style="background-image: linear-gradient(135deg, #1A1620 0%, #0D0B0E 100%);"
-             id="hero-banner" role="button" tabindex="0" aria-label="Reproducir contenido destacado">
+           style="background-image: linear-gradient(135deg, #1A1620 0%, #0D0B0E 100%);"
+           id="hero-banner" role="button" tabindex="0" aria-label="Reproducir contenido destacado">
 
-          <!-- Decorative film strip top -->
-          <div class="film-strip top-0 left-0 right-0 absolute h-8 opacity-20" aria-hidden="true"></div>
-
-          <!-- Ambient glow -->
-          <div class="absolute inset-0 bg-gradient-to-br from-cinema-amber/5 via-transparent to-cinema-accent/10
+        <div class="absolute inset-0 bg-gradient-to-br from-cinema-amber/5 via-transparent to-cinema-accent/10
                       group-hover:from-cinema-amber/10 group-hover:to-cinema-accent/20 transition-all duration-700"
-               aria-hidden="true"></div>
+             aria-hidden="true"></div>
 
-          <!-- Spotlight effect -->
-          <div class="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-cinema-amber/8
-                      rounded-b-full blur-3xl opacity-0 group-hover:opacity-100 transition-all duration-700"
-               aria-hidden="true"></div>
-
-          <!-- Content -->
-          <div class="relative z-10 space-y-3 max-w-lg">
-            <div class="flex items-center gap-2">
+        <div class="relative z-10 space-y-3 max-w-lg">
+          <div class="flex items-center gap-2">
               <span class="px-2 py-0.5 bg-cinema-amber text-cinema-bg text-xs font-bold rounded tracking-widest uppercase">
                 Destacado
               </span>
-              <span class="text-cinema-muted text-xs">TV · En Directo</span>
+            <span class="text-cinema-muted text-xs">TV · En Directo</span>
+          </div>
+          <h1 class="font-display text-2xl md:text-4xl font-bold text-cinema-warm leading-tight">
+            Bienvenido a<br/>
+            <span class="text-cinema-amber italic">Castify</span>
+          </h1>
+          <p class="text-cinema-muted text-sm md:text-base max-w-md">
+            Tu sala de cine digital. TV en vivo, radio, podcasts y tus listas M3U favoritas en un solo lugar.
+          </p>
+          <div class="flex gap-3 pt-2">
+            <button class="btn-primary" onclick="CinemaStream.navigateTo('live-tv')">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+              Ver en Directo
+            </button>
+            <button class="btn-secondary" onclick="CinemaStream.navigateTo('m3u-player')">
+              Cargar M3U
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category quick-access cards -->
+      <div>
+        <h2 class="section-title">Explorar</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+          <button class="category-card" onclick="CinemaStream.navigateTo('live-tv')">
+            <div class="category-icon bg-red-900/40 text-red-400">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.868v6.264a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
             </div>
-            <h1 class="font-display text-2xl md:text-4xl font-bold text-cinema-warm leading-tight">
-              Bienvenido a<br/>
-              <span class="text-cinema-amber italic">Castify</span>
-            </h1>
-            <p class="text-cinema-muted text-sm md:text-base max-w-md">
-              Tu sala de cine digital. TV en vivo, radio, podcasts y tus listas M3U favoritas en un solo lugar.
-            </p>
-            <div class="flex gap-3 pt-2">
-              <button class="btn-primary" data-section="live-tv" onclick="CinemaStream.navigateTo('live-tv')">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                Ver en Directo
-              </button>
-              <button class="btn-secondary" onclick="CinemaStream.navigateTo('m3u-player')">
-                Cargar M3U
-              </button>
-            </div>
-          </div>
-
-          <!-- Decorative reel -->
-          <div class="absolute right-6 bottom-6 opacity-10 hidden md:block" aria-hidden="true">
-            <svg class="w-32 h-32 text-cinema-amber animate-spin-slow" fill="currentColor" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="3"/>
-              <circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="2"/>
-              <circle cx="50" cy="50" r="5" fill="currentColor"/>
-              <circle cx="50" cy="20" r="6" fill="currentColor"/>
-              <circle cx="50" cy="80" r="6" fill="currentColor"/>
-              <circle cx="20" cy="50" r="6" fill="currentColor"/>
-              <circle cx="80" cy="50" r="6" fill="currentColor"/>
-            </svg>
-          </div>
-        </div>
-
-        <!-- Category quick-access cards -->
-        <div>
-          <h2 class="section-title">Explorar</h2>
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-            <button class="category-card" data-section="live-tv" onclick="CinemaStream.navigateTo('live-tv')">
-              <div class="category-icon bg-red-900/40 text-red-400">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.069A1 1 0 0121 8.868v6.264a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg>
-              </div>
-              <span class="category-label">TV en Directo</span>
-              <span class="category-sub">12 canales</span>
-            </button>
-
-            <button class="category-card" data-section="radio" onclick="CinemaStream.navigateTo('radio')">
-              <div class="category-icon bg-blue-900/40 text-blue-400">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-              </div>
-              <span class="category-label">Radio</span>
-              <span class="category-sub">8 emisoras</span>
-            </button>
-
-            <button class="category-card" data-section="podcasts" onclick="CinemaStream.navigateTo('podcasts')">
-              <div class="category-icon bg-purple-900/40 text-purple-400">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
-              </div>
-              <span class="category-label">Podcasts</span>
-              <span class="category-sub">24 episodios</span>
-            </button>
-
-            <button class="category-card" data-section="m3u-player" onclick="CinemaStream.navigateTo('m3u-player')">
-              <div class="category-icon bg-cinema-amber/20 text-cinema-amber">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-              </div>
-              <span class="category-label">Lista M3U</span>
-              <span class="category-sub">Tu contenido</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Featured channels row -->
-        <div>
-          <div class="flex items-center justify-between">
-            <h2 class="section-title">Canales Populares</h2>
-            <button class="text-cinema-amber text-sm hover:underline" onclick="CinemaStream.navigateTo('live-tv')">Ver todos</button>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" id="featured-channels">
-            <!-- populated by JS -->
-          </div>
-        </div>
-
-      </section>
-
-      <!-- ── SECTION: LIVE TV ───────────────────── -->
-      <section id="section-live-tv" class="section-panel hidden space-y-6">
-        <div class="flex items-center gap-3">
-          <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-          <h2 class="section-title !mb-0">TV en Directo</h2>
-        </div>
-
-        <!-- Category filter pills -->
-        <div class="flex gap-2 flex-wrap" role="group" aria-label="Filtros de categoría">
-          <button class="filter-pill active">Todos</button>
-          <button class="filter-pill">Noticias</button>
-          <button class="filter-pill">Deportes</button>
-          <button class="filter-pill">Entretenimiento</button>
-          <button class="filter-pill">Documentales</button>
-          <button class="filter-pill">Internacional</button>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="tv-channels-grid">
-          <!-- populated by JS -->
-        </div>
-      </section>
-
-      <!-- ── SECTION: RADIO ────────────────────── -->
-      <section id="section-radio" class="section-panel hidden space-y-6">
-        <h2 class="section-title">Radio</h2>
-
-        <div class="flex gap-2 flex-wrap" role="group" aria-label="Filtros de género">
-          <button class="filter-pill active">Todas</button>
-          <button class="filter-pill">Pop</button>
-          <button class="filter-pill">Rock</button>
-          <button class="filter-pill">Clásica</button>
-          <button class="filter-pill">Jazz</button>
-          <button class="filter-pill">Electrónica</button>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="radio-grid">
-          <!-- populated by JS -->
-        </div>
-      </section>
-
-      <!-- ── SECTION: PODCASTS ─────────────────── -->
-      <section id="section-podcasts" class="section-panel hidden space-y-6">
-        <h2 class="section-title">Podcasts</h2>
-
-        <div class="flex gap-2 flex-wrap" role="group" aria-label="Filtros de categoría">
-          <button class="filter-pill active">Todos</button>
-          <button class="filter-pill">Tecnología</button>
-          <button class="filter-pill">Ciencia</button>
-          <button class="filter-pill">Cultura</button>
-          <button class="filter-pill">Negocios</button>
-        </div>
-
-        <div class="space-y-3" id="podcasts-list">
-          <!-- populated by JS -->
-        </div>
-      </section>
-
-      <!-- ── SECTION: M3U PLAYER ───────────────── -->
-      <section id="section-m3u-player" class="section-panel hidden space-y-6">
-        <h2 class="section-title">Reproductor M3U / M3U8</h2>
-        <p class="text-cinema-muted text-sm">Carga tu lista de reproducción desde un archivo local o una URL. Compatible con M3U, M3U8 y streams HLS.</p>
-
-        <!-- Import tabs -->
-        <div class="flex gap-1 p-1 bg-cinema-card rounded-xl w-fit" role="tablist">
-          <button class="m3u-import-tab m3u-tab active" data-target="url"
-                  role="tab" aria-selected="true" aria-controls="m3u-panel-url">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-            </svg>
-            Por URL
+            <span class="category-label">TV en Directo</span>
+            <span class="category-sub">12 canales</span>
           </button>
-          <button class="m3u-import-tab m3u-tab" data-target="file"
-                  role="tab" aria-selected="false" aria-controls="m3u-panel-file">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Archivo Local
+
+          <button class="category-card" onclick="CinemaStream.navigateTo('radio')">
+            <div class="category-icon bg-blue-900/40 text-blue-400">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <span class="category-label">Radio</span>
+            <span class="category-sub">8 emisoras</span>
+          </button>
+
+          <button class="category-card" onclick="CinemaStream.navigateTo('podcasts')">
+            <div class="category-icon bg-purple-900/40 text-purple-400">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+            </div>
+            <span class="category-label">Podcasts</span>
+            <span class="category-sub">24 episodios</span>
+          </button>
+
+          <button class="category-card" onclick="CinemaStream.navigateTo('m3u-player')">
+            <div class="category-icon bg-cinema-amber/20 text-cinema-amber">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            </div>
+            <span class="category-label">Lista M3U</span>
+            <span class="category-sub">Tu contenido</span>
           </button>
         </div>
+      </div>
 
-        <!-- Panel: URL -->
-        <div id="m3u-panel-url" role="tabpanel">
-          <div class="flex gap-3 flex-col sm:flex-row">
-            <input type="url" id="m3u-url-input"
-                   placeholder="https://ejemplo.com/lista.m3u8"
-                   class="flex-1 px-4 py-3 bg-cinema-card border border-cinema-border rounded-xl
-                          text-cinema-text placeholder-cinema-muted
-                          focus:outline-none focus:border-cinema-amber focus:ring-2 focus:ring-cinema-amber/20
-                          transition-all duration-200"
-                   aria-label="URL de la lista M3U" />
-            <button id="m3u-btn-load-url" class="btn-primary whitespace-nowrap">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+      <!-- Featured channels row -->
+      <div>
+        <div class="flex items-center justify-between">
+          <h2 class="section-title">Canales Populares</h2>
+          <button class="text-cinema-amber text-sm hover:underline" onclick="CinemaStream.navigateTo('live-tv')">Ver todos</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4" id="featured-channels"></div>
+      </div>
+
+    </section>
+
+    <!-- ── SECTION: LIVE TV ───────────────────── -->
+    <section id="section-live-tv" class="section-panel hidden space-y-6">
+      <div class="flex items-center gap-3">
+        <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+        <h2 class="section-title !mb-0">TV en Directo</h2>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="tv-grid"></div>
+    </section>
+
+    <!-- ── SECTION: RADIO ────────────────────── -->
+    <section id="section-radio" class="section-panel hidden space-y-6">
+      <h2 class="section-title">Radio</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="radio-grid"></div>
+    </section>
+
+    <!-- ── SECTION: PODCASTS ─────────────────── -->
+    <section id="section-podcasts" class="section-panel hidden space-y-6">
+      <h2 class="section-title">Podcasts</h2>
+      <div class="space-y-3" id="podcast-list"></div>
+    </section>
+
+    <!-- ── SECTION: M3U PLAYER ───────────────── -->
+    <section id="section-m3u-player" class="section-panel hidden space-y-6">
+      <h2 class="section-title">Reproductor M3U / M3U8</h2>
+      <p class="text-cinema-muted text-sm">Carga tu lista de reproducción desde un archivo local o una URL. Compatible con M3U, M3U8 y streams HLS.</p>
+
+      <!-- Import tabs -->
+      <div class="flex gap-1 p-1 bg-cinema-card rounded-xl w-fit" role="tablist">
+        <button class="m3u-import-tab m3u-tab active" id="tab-url" data-target="url" role="tab" aria-selected="true">Por URL</button>
+        <button class="m3u-import-tab m3u-tab" id="tab-file" data-target="file" role="tab" aria-selected="false">Archivo Local</button>
+      </div>
+
+      <!-- Panel: URL -->
+      <div id="m3u-url-panel" role="tabpanel" aria-labelledby="tab-url">
+        <div class="flex gap-3 flex-col sm:flex-row">
+          <input type="url" id="m3u-url-input" placeholder="https://ejemplo.com/lista.m3u8"
+                 class="flex-1 px-4 py-3 bg-cinema-card border border-cinema-border rounded-xl text-cinema-text placeholder-cinema-muted focus:outline-none focus:border-cinema-amber" />
+          <button id="btn-load-url" class="btn-primary whitespace-nowrap" onclick="CinemaStream.loadM3UFromUrl()">Cargar URL</button>
+        </div>
+      </div>
+
+      <!-- Panel: Archivo local -->
+      <div id="m3u-file-panel" class="hidden" role="tabpanel" aria-labelledby="tab-file">
+        <label class="file-drop-zone p-8 border-2 border-dashed border-cinema-border rounded-xl text-center cursor-pointer hover:border-cinema-amber transition-colors block" id="file-drop-zone" for="m3u-file-input">
+          <div class="flex flex-col items-center gap-3 pointer-events-none">
+            <div class="w-16 h-16 rounded-2xl bg-cinema-amber/10 flex items-center justify-center border border-cinema-amber/20">
+              <svg class="w-8 h-8 text-cinema-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
               </svg>
-              Cargar
-            </button>
+            </div>
+            <div class="text-center">
+              <p class="text-cinema-text font-medium">Arrastra tu archivo aquí</p>
+              <p class="text-cinema-muted text-sm mt-1">o haz clic para seleccionar</p>
+              <p class="text-cinema-muted/60 text-xs mt-2">.m3u · .m3u8 · hasta 50 MB</p>
+            </div>
           </div>
-        </div>
+          <input type="file" id="m3u-file-input" accept=".m3u,.m3u8,.txt" class="hidden" aria-hidden="true" />
+        </label>
+      </div>
 
-        <!-- Panel: Archivo local -->
-        <div id="m3u-panel-file" class="hidden" role="tabpanel">
-          <div class="file-drop-zone" id="m3u-drop-zone" tabindex="0" role="button"
-               aria-label="Zona de carga de archivos M3U. Arrastra un archivo o haz clic.">
-            <div class="flex flex-col items-center gap-3 pointer-events-none">
-              <div class="w-16 h-16 rounded-2xl bg-cinema-amber/10 flex items-center justify-center border border-cinema-amber/20">
-                <svg class="w-8 h-8 text-cinema-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
+      <!-- ════════════════════════════════════════════════════
+           REPRODUCTOR + PLAYLIST EMBEBIDA (M3U Player & List)
+      ════════════════════════════════════════════════════ -->
+      <div id="m3u-player-section" class="hidden space-y-4">
+        <div class="flex flex-col xl:flex-row gap-4">
+
+          <!-- A. REPRODUCTOR CINEMATOGRÁFICO INTEGRADO -->
+          <div id="cinema-player-wrap"
+               class="flex-1 min-w-0 bg-black rounded-2xl overflow-hidden border border-cinema-border relative shadow-2xl group">
+
+            <div id="cp-screen-wrap" class="relative w-full cursor-pointer" style="aspect-ratio:16/9;background:#000">
+              <video id="cp-video" class="absolute inset-0 w-full h-full object-contain"
+                     preload="none" playsinline aria-label="Reproductor de vídeo"></video>
+              <audio id="cp-audio" preload="none" aria-hidden="true"></audio>
+
+              <div id="cp-no-source" class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-cinema-bg text-cinema-muted">
+                <div class="w-20 h-20 rounded-2xl bg-cinema-card border border-cinema-border flex items-center justify-center">
+                  <svg class="w-10 h-10 text-cinema-amber opacity-60" fill="currentColor" viewBox="0 0 24 24"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2z"/></svg>
+                </div>
+                <div class="text-center">
+                  <p class="font-display text-lg text-cinema-warm">Selecciona un canal</p>
+                  <p class="text-sm mt-1">Elige un canal de la lista para comenzar</p>
+                </div>
               </div>
-              <div class="text-center">
-                <p class="text-cinema-text font-medium">Arrastra tu archivo aquí</p>
-                <p class="text-cinema-muted text-sm mt-1">o haz clic para seleccionar</p>
-                <p class="text-cinema-muted/60 text-xs mt-2">.m3u · .m3u8 · hasta 50 MB</p>
+
+              <div id="cp-loading" class="absolute inset-0 hidden flex items-center justify-center bg-black/70">
+                <div class="flex flex-col items-center gap-3">
+                  <svg class="w-10 h-10 text-cinema-amber animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  <p class="text-cinema-muted text-sm">Cargando stream…</p>
+                </div>
+              </div>
+
+              <div id="cp-error" class="absolute inset-0 hidden flex flex-col items-center justify-center gap-3 bg-black/80 p-4 text-center">
+                <svg class="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+                <p class="text-red-400 font-medium" id="cp-error-msg">Error de reproducción</p>
               </div>
             </div>
-            <input type="file" id="m3u-file-input" accept=".m3u,.m3u8,.txt" class="hidden" aria-hidden="true" />
-          </div>
-        </div>
 
-        <!-- Barra de estado de importación -->
-        <div id="m3u-status-bar" class="hidden">
-          <p id="m3u-status-text" class="text-sm text-cinema-muted"></p>
-        </div>
-
-        <!-- ════════════════════════════════════════════════════
-             REPRODUCTOR + PLAYLIST (visibles tras cargar lista)
-        ════════════════════════════════════════════════════ -->
-        <div id="m3u-player-section" class="hidden space-y-4">
-          <div class="flex flex-col xl:flex-row gap-4">
-
-            <!-- A. REPRODUCTOR CINEMATOGRÁFICO -->
-            <div id="cinema-player-wrap"
-                 class="flex-1 min-w-0 bg-black rounded-2xl overflow-hidden border border-cinema-border relative shadow-2xl group">
-
-              <div id="cp-screen-wrap" class="relative w-full cursor-pointer" style="aspect-ratio:16/9;background:#000">
-                <video id="cp-video" class="absolute inset-0 w-full h-full object-contain"
-                       preload="none" playsinline aria-label="Reproductor de vídeo"></video>
-                <audio id="cp-audio" preload="none" aria-hidden="true"></audio>
-
-                <div id="cp-no-source" class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-cinema-bg text-cinema-muted">
-                  <div class="w-20 h-20 rounded-2xl bg-cinema-card border border-cinema-border flex items-center justify-center">
-                    <svg class="w-10 h-10 text-cinema-amber opacity-60" fill="currentColor" viewBox="0 0 24 24"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2z"/></svg>
-                  </div>
-                  <div class="text-center">
-                    <p class="font-display text-lg text-cinema-warm">Selecciona un canal</p>
-                    <p class="text-sm mt-1">Elige un canal de la lista para comenzar</p>
-                  </div>
-                </div>
-
-                <div id="cp-loading" class="absolute inset-0 hidden flex items-center justify-center bg-black/70">
-                  <div class="flex flex-col items-center gap-3">
-                    <svg class="w-10 h-10 text-cinema-amber animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                    <p class="text-cinema-muted text-sm">Cargando stream…</p>
-                  </div>
-                </div>
-
-                <div id="cp-error" class="absolute inset-0 hidden flex flex-col items-center justify-center gap-3 bg-black/80 p-4 text-center">
-                  <svg class="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                  </svg>
-                  <p class="text-red-400 font-medium" id="cp-error-msg">Error de reproducción</p>
-                  <button class="btn-secondary text-sm py-1.5" onclick="window.cinemaPlayer?.togglePlay()">Reintentar</button>
-                </div>
-              </div>
-
-              <!-- Info canal (visible en hover) -->
-              <div class="absolute top-3 left-3 right-3 flex items-start justify-between
-                          opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
-                <div class="flex items-center gap-2 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 max-w-xs">
-                  <img id="cp-channel-logo" src="" alt="" class="hidden w-7 h-7 rounded object-contain flex-shrink-0" />
-                  <div class="min-w-0">
-                    <p id="cp-channel-title" class="text-white text-sm font-semibold truncate leading-tight"></p>
-                    <p id="cp-channel-group" class="text-white/50 text-xs truncate leading-tight"></p>
-                  </div>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <span id="cp-live-badge" class="hidden items-center gap-1 px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded">
-                    <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>EN VIVO
-                  </span>
-                  <span id="cp-stream-type" class="px-2 py-0.5 bg-black/60 text-cinema-amber text-xs font-bold rounded tracking-widest"></span>
-                </div>
-              </div>
-
-              <!-- Controles personalizados -->
-              <div class="cp-controls absolute bottom-0 left-0 right-0 z-20
+            <!-- Controles personalizados del reproductor embebido -->
+            <div class="cp-controls absolute bottom-0 left-0 right-0 z-20
                           bg-gradient-to-t from-black/90 via-black/60 to-transparent
                           px-4 pt-8 pb-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
 
-                <!-- Barra de progreso -->
-                <div id="cp-progress-container"
-                     class="relative h-1 rounded-full bg-white/20 cursor-pointer mb-3 group/prog"
-                     role="slider" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
-                  <div id="cp-progress-buffer" class="absolute inset-y-0 left-0 rounded-full bg-white/25" style="width:0%"></div>
-                  <div id="cp-progress-fill" class="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-cinema-amber to-cinema-accent" style="width:0%"></div>
-                  <div id="cp-progress-thumb" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-cinema-amber shadow-amber-sm opacity-0 group-hover/prog:opacity-100 transition-opacity pointer-events-none" style="left:0%"></div>
-                </div>
+              <!-- Barra de progreso -->
+              <div id="cp-progress-container"
+                   class="relative h-1 rounded-full bg-white/20 cursor-pointer mb-3 group/prog"
+                   role="slider" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+                <div id="cp-progress-buffer" class="absolute inset-y-0 left-0 rounded-full bg-white/25" style="width:0%"></div>
+                <div id="cp-progress-fill" class="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-cinema-amber to-cinema-accent" style="width:0%"></div>
+                <div id="cp-progress-thumb" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-cinema-amber shadow-amber-sm opacity-0 group-hover/prog:opacity-100 transition-opacity pointer-events-none" style="left:0%"></div>
+              </div>
 
-                <!-- Botones de control -->
-                <div class="flex items-center gap-2">
-                  <button id="cp-btn-play-pause" class="cp-control-btn cp-control-btn--main" aria-label="Reproducir">
-                    <svg id="cp-icon-play" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    <svg id="cp-icon-pause" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                  </button>
-                  <button id="cp-btn-prev" class="cp-control-btn" aria-label="Canal anterior">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-                  </button>
-                  <button id="cp-btn-next" class="cp-control-btn" aria-label="Canal siguiente">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-                  </button>
-                  <button id="cp-btn-mute" class="cp-control-btn" aria-label="Silenciar">
-                    <svg id="cp-icon-volume" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
-                    <svg id="cp-icon-muted" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
-                  </button>
-                  <div class="hidden sm:flex items-center gap-2 relative w-20">
-                    <div class="flex-1 h-1 rounded-full bg-white/20 cursor-pointer">
-                      <div id="cp-volume-bar" class="h-full rounded-full bg-cinema-amber" style="width:80%"></div>
-                    </div>
-                    <input type="range" id="cp-volume-slider" min="0" max="100" value="80"
-                           class="absolute inset-0 opacity-0 w-full cursor-pointer" aria-label="Volumen" />
+              <!-- Botones de control -->
+              <div class="flex items-center gap-2">
+                <button id="cp-btn-play-pause" class="cp-control-btn cp-control-btn--main" aria-label="Reproducir">
+                  <svg id="cp-icon-play" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  <svg id="cp-icon-pause" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button id="cp-btn-prev" class="cp-control-btn" aria-label="Canal anterior">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                </button>
+                <button id="cp-btn-next" class="cp-control-btn" aria-label="Canal siguiente">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+                <button id="cp-btn-mute" class="cp-control-btn" aria-label="Silenciar">
+                  <svg id="cp-icon-volume" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                  <svg id="cp-icon-muted" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                </button>
+                <div class="hidden sm:flex items-center gap-2 relative w-20">
+                  <div class="flex-1 h-1 rounded-full bg-white/20 cursor-pointer">
+                    <div id="cp-volume-bar" class="h-full rounded-full bg-cinema-amber" style="width:80%"></div>
                   </div>
-                  <span class="flex items-center gap-1 text-xs text-white/70 ml-1 tabular-nums">
+                  <input type="range" id="cp-volume-slider" min="0" max="100" value="80"
+                         class="absolute inset-0 opacity-0 w-full cursor-pointer" aria-label="Volumen" />
+                </div>
+                <span class="flex items-center gap-1 text-xs text-white/70 ml-1 tabular-nums">
                     <span id="cp-time-current">0:00</span>/<span id="cp-time-total">–:––</span>
                   </span>
-                  <div class="flex-1"></div>
-                  <button id="cp-btn-speed" class="cp-control-btn text-xs font-bold w-auto px-2" aria-label="Velocidad">1x</button>
-                  <button id="cp-btn-cinema" class="cp-control-btn" aria-label="Modo cine" aria-pressed="false" title="C">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
-                  </button>
-                  <button id="cp-btn-fullscreen" class="cp-control-btn" aria-label="Pantalla completa" title="F">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                  </button>
-                </div>
-                <p class="text-white/25 text-xs mt-1.5 text-center hidden md:block">
-                  Espacio: play · ← →: canal · Alt+← →: seek · M: mute · F: fullscreen · C: modo cine
-                </p>
+                <div class="flex-1"></div>
+                <button id="cp-btn-speed" class="cp-control-btn text-xs font-bold w-auto px-2" aria-label="Velocidad">1x</button>
+                <button id="cp-btn-cinema" class="cp-control-btn" aria-label="Modo cine" aria-pressed="false" title="C">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+                </button>
+                <button id="cp-btn-fullscreen" class="cp-control-btn" aria-label="Pantalla completa" title="F">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                </button>
               </div>
-            </div><!-- /cinema-player-wrap -->
+            </div>
+          </div><!-- /cinema-player-wrap -->
 
+          <!-- B. PANEL DE PLAYLIST M3U -->
+          <div id="m3u-playlist-wrap"
+               class="hidden xl:flex xl:w-80 flex-shrink-0 flex-col bg-cinema-card border border-cinema-border rounded-2xl overflow-hidden"
+               style="max-height: min(560px, 80vh);">
 
-            <!-- B. PANEL DE PLAYLIST -->
-            <div id="m3u-playlist-wrap"
-                 class="hidden xl:flex xl:w-80 flex-shrink-0 flex-col bg-cinema-card border border-cinema-border rounded-2xl overflow-hidden"
-                 style="max-height: min(560px, 80vh);">
-
-              <!-- Cabecera controles -->
-              <div class="p-3 border-b border-cinema-border space-y-2 flex-shrink-0">
-                <div class="relative">
-                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-cinema-muted pointer-events-none"
-                       fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                  </svg>
-                  <input type="search" id="m3u-search" placeholder="Buscar canal…"
-                         class="w-full pl-8 pr-3 py-2 bg-cinema-surface border border-cinema-border rounded-lg
+            <!-- Cabecera controles de playlist -->
+            <div class="p-3 border-b border-cinema-border space-y-2 flex-shrink-0">
+              <div class="relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-cinema-muted pointer-events-none"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="search" id="m3u-search" placeholder="Buscar canal…"
+                       class="w-full pl-8 pr-3 py-2 bg-cinema-surface border border-cinema-border rounded-lg
                                 text-sm text-cinema-text placeholder-cinema-muted
                                 focus:outline-none focus:border-cinema-amber focus:ring-1 focus:ring-cinema-amber/30 transition-all"
-                         aria-label="Buscar canal en la lista" />
-                </div>
-                <div class="flex items-center gap-2">
-                  <select id="m3u-group-filter"
-                          class="flex-1 min-w-0 px-2 py-1.5 bg-cinema-surface border border-cinema-border rounded-lg text-xs text-cinema-text focus:outline-none focus:border-cinema-amber transition-all"
-                          aria-label="Filtrar por grupo">
-                    <option value="all">Todos los grupos</option>
-                  </select>
-                  <button id="m3u-sort-alpha" class="flex-shrink-0 p-1.5 rounded-lg text-cinema-muted hover:text-cinema-amber hover:bg-cinema-surface transition-all" title="Ordenar A–Z" aria-label="Ordenar alfabéticamente">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
-                  </button>
-                  <button id="m3u-btn-clear" class="flex-shrink-0 p-1.5 rounded-lg text-cinema-muted hover:text-red-400 hover:bg-cinema-surface transition-all" title="Vaciar lista" aria-label="Limpiar lista">
-                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                  </button>
-                </div>
-                <p class="text-xs text-cinema-muted" id="m3u-channel-count">0 canales</p>
+                       aria-label="Buscar canal en la lista" />
               </div>
-
-              <!-- Lista scrollable -->
-              <div id="m3u-channel-list" class="flex-1 overflow-y-auto custom-scrollbar p-2" role="list" aria-label="Lista de canales">
-                <!-- Renderizado por PlaylistUI -->
+              <div class="flex items-center gap-2">
+                <select id="m3u-group-filter"
+                        class="flex-1 min-w-0 px-2 py-1.5 bg-cinema-surface border border-cinema-border rounded-lg text-xs text-cinema-text focus:outline-none focus:border-cinema-amber transition-all"
+                        aria-label="Filtrar por grupo">
+                  <option value="all">Todos los grupos</option>
+                </select>
+                <button id="m3u-sort-alpha" class="flex-shrink-0 p-1.5 rounded-lg text-cinema-muted hover:text-cinema-amber hover:bg-cinema-surface transition-all" title="Ordenar A–Z" aria-label="Ordenar alfabéticamente">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+                </button>
+                <button id="m3u-btn-clear" class="flex-shrink-0 p-1.5 rounded-lg text-cinema-muted hover:text-red-400 hover:bg-cinema-surface transition-all" title="Vaciar lista" aria-label="Limpiar lista">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
               </div>
-            </div><!-- /m3u-playlist-wrap -->
-
-          </div><!-- /flex layout -->
-        </div><!-- /m3u-player-section -->
-
-      </section>
-
-        <!-- Load method tabs -->
-        <div class="flex gap-1 p-1 bg-cinema-card rounded-xl w-fit" role="tablist">
-          <button class="m3u-tab active" id="tab-url" role="tab" aria-selected="true" aria-controls="m3u-url-panel" data-target="url">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-            Por URL
-          </button>
-          <button class="m3u-tab" id="tab-file" role="tab" aria-selected="false" aria-controls="m3u-file-panel" data-target="file">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            Archivo Local
-          </button>
-        </div>
-
-        <!-- URL panel -->
-        <div id="m3u-url-panel" role="tabpanel" aria-labelledby="tab-url">
-          <div class="flex gap-3 flex-col sm:flex-row">
-            <input type="url"
-                   id="m3u-url-input"
-                   placeholder="https://ejemplo.com/lista.m3u8"
-                   class="flex-1 px-4 py-3 bg-cinema-card border border-cinema-border rounded-xl
-                          text-cinema-text placeholder-cinema-muted
-                          focus:outline-none focus:border-cinema-amber focus:ring-2 focus:ring-cinema-amber/20
-                          transition-all duration-200"
-                   aria-label="URL de la lista M3U" />
-            <button id="btn-load-url" class="btn-primary whitespace-nowrap" onclick="CinemaStream.loadM3UFromUrl()">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-              Cargar URL
-            </button>
-          </div>
-        </div>
-
-        <!-- File panel -->
-        <div id="m3u-file-panel" class="hidden" role="tabpanel" aria-labelledby="tab-file">
-          <label class="file-drop-zone" id="file-drop-zone" for="m3u-file-input" tabindex="0" role="button" aria-label="Área de carga de archivo M3U">
-            <div class="flex flex-col items-center gap-3 pointer-events-none">
-              <div class="w-16 h-16 rounded-2xl bg-cinema-amber/10 flex items-center justify-center border border-cinema-amber/20">
-                <svg class="w-8 h-8 text-cinema-amber" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                </svg>
-              </div>
-              <div class="text-center">
-                <p class="text-cinema-text font-medium">Arrastra tu archivo aquí</p>
-                <p class="text-cinema-muted text-sm mt-1">o haz clic para seleccionar</p>
-                <p class="text-cinema-muted/60 text-xs mt-2">.m3u · .m3u8 · hasta 50 MB</p>
-              </div>
+              <p class="text-xs text-cinema-muted" id="m3u-channel-count">0 canales</p>
             </div>
-            <input type="file" id="m3u-file-input" accept=".m3u,.m3u8,.txt" class="hidden" aria-hidden="true" />
-          </label>
-        </div>
 
-        <!-- M3U Playlist result -->
-        <div id="m3u-playlist-container" class="hidden space-y-4">
+            <!-- Lista scrollable de canales -->
+            <div id="m3u-channel-list" class="flex-1 overflow-y-auto custom-scrollbar p-2" role="list" aria-label="Lista de canales"></div>
+          </div><!-- /m3u-playlist-wrap -->
+
+        </div>
+      </div><!-- /m3u-player-section -->
+
+    </section>
+
+    <!-- ── SECTION: SETTINGS ─────────────────── -->
+    <section id="section-settings" class="section-panel hidden space-y-6 max-w-2xl">
+      <h2 class="section-title">Ajustes</h2>
+
+      <div class="space-y-4">
+        <div class="settings-card bg-cinema-card border border-cinema-border rounded-xl p-4">
           <div class="flex items-center justify-between">
-            <h3 class="font-medium text-cinema-warm" id="m3u-playlist-title">Lista cargada</h3>
-            <button class="text-cinema-muted text-sm hover:text-cinema-amber transition-colors" onclick="CinemaStream.clearM3UPlaylist()">
-              Limpiar lista
+            <div>
+              <p class="font-medium text-cinema-text">Efecto Cinematic Dimmer</p>
+              <p class="text-sm text-cinema-muted mt-0.5">Oscurece la interfaz al reproducir contenido</p>
+            </div>
+            <button class="w-12 h-6 rounded-full bg-cinema-amber relative transition-colors active" id="toggle-dimmer" role="switch" aria-checked="true">
+              <span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-cinema-bg transition-transform translate-x-6"></span>
             </button>
           </div>
-          <div class="space-y-2 max-h-80 overflow-y-auto custom-scrollbar pr-1" id="m3u-playlist-items">
-            <!-- populated by JS -->
-          </div>
-        </div>
-      </section>
-
-      <!-- ── SECTION: SETTINGS ─────────────────── -->
-      <section id="section-settings" class="section-panel hidden space-y-6 max-w-2xl">
-        <h2 class="section-title">Ajustes</h2>
-
-        <div class="space-y-4">
-          <div class="settings-card">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-medium text-cinema-text">Efecto Cinematic Dimmer</p>
-                <p class="text-sm text-cinema-muted mt-0.5">Oscurece la interfaz al reproducir contenido</p>
-              </div>
-              <button class="toggle-switch active" id="toggle-dimmer" role="switch" aria-checked="true" aria-label="Activar/desactivar dimmer cinematográfico">
-                <span class="toggle-thumb"></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="settings-card">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-medium text-cinema-text">Grano de Película</p>
-                <p class="text-sm text-cinema-muted mt-0.5">Añade textura visual de película clásica</p>
-              </div>
-              <button class="toggle-switch active" id="toggle-grain" role="switch" aria-checked="true" aria-label="Activar/desactivar grano de película">
-                <span class="toggle-thumb"></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="settings-card">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="font-medium text-cinema-text">Animaciones</p>
-                <p class="text-sm text-cinema-muted mt-0.5">Transiciones y efectos de movimiento</p>
-              </div>
-              <button class="toggle-switch active" id="toggle-animations" role="switch" aria-checked="true" aria-label="Activar/desactivar animaciones">
-                <span class="toggle-thumb"></span>
-              </button>
-            </div>
-          </div>
-
-          <div class="settings-card">
-            <label class="block font-medium text-cinema-text mb-2" for="volume-control">
-              Volumen predeterminado
-            </label>
-            <input type="range" id="volume-control" min="0" max="100" value="80"
-                   class="w-full h-2 rounded-full bg-cinema-border appearance-none cursor-pointer
-                          accent-cinema-amber"
-                   aria-label="Control de volumen" />
-            <div class="flex justify-between text-xs text-cinema-muted mt-1">
-              <span>0%</span>
-              <span id="volume-value">80%</span>
-              <span>100%</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- ═══════════════════════════════════════════
-         PERSISTENT MEDIA PLAYER BAR
-    ══════════════════════════════════════════════ -->
-    <div id="player-bar"
-         class="fixed bottom-0 left-0 right-0 lg:left-64 z-50
-                bg-cinema-surface/95 backdrop-blur-xl border-t border-cinema-border
-                transform translate-y-full transition-transform duration-500 ease-in-out"
-         role="region" aria-label="Reproductor de medios" aria-live="polite">
-
-      <!-- Progress bar (video/audio) -->
-      <div class="h-0.5 bg-cinema-border relative cursor-pointer group" id="progress-bar-container" role="slider" aria-label="Barra de progreso" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
-        <div class="h-full bg-gradient-to-r from-cinema-amber to-cinema-accent transition-all duration-200"
-             id="progress-bar-fill" style="width: 0%"></div>
-        <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-cinema-amber shadow-amber-sm
-                    opacity-0 group-hover:opacity-100 transition-opacity -translate-x-1/2 pointer-events-none"
-             id="progress-thumb" style="left: 0%"></div>
-      </div>
-
-      <div class="flex items-center gap-4 px-4 md:px-6 py-3">
-
-        <!-- Thumbnail + info -->
-        <div class="flex items-center gap-3 min-w-0 flex-1">
-          <div class="w-10 h-10 rounded-lg bg-cinema-card border border-cinema-border
-                      flex-shrink-0 overflow-hidden flex items-center justify-center"
-               id="player-thumb-wrap">
-            <svg class="w-5 h-5 text-cinema-amber" id="player-default-icon" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2z"/>
-            </svg>
-            <img id="player-thumb" src="" alt="" class="hidden w-full h-full object-cover" />
-          </div>
-          <div class="min-w-0">
-            <p class="text-cinema-text text-sm font-medium truncate" id="player-title">–</p>
-            <p class="text-cinema-muted text-xs truncate" id="player-subtitle">Selecciona un canal para comenzar</p>
-          </div>
         </div>
 
-        <!-- Controls -->
-        <div class="flex items-center gap-1 md:gap-2">
-          <button class="player-btn" id="btn-prev" onclick="CinemaStream.player.prev()" aria-label="Anterior">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-          </button>
-          <button class="player-btn-main" id="btn-play-pause" onclick="CinemaStream.player.togglePlay()" aria-label="Reproducir/Pausar">
-            <svg class="w-6 h-6" id="icon-play" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            <svg class="w-6 h-6 hidden" id="icon-pause" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-          </button>
-          <button class="player-btn" id="btn-next" onclick="CinemaStream.player.next()" aria-label="Siguiente">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-          </button>
-        </div>
-
-        <!-- Volume + options -->
-        <div class="flex items-center gap-2 md:gap-3">
-          <div class="hidden md:flex items-center gap-2">
-            <button class="player-btn" id="btn-mute" onclick="CinemaStream.player.toggleMute()" aria-label="Silenciar">
-              <svg class="w-4 h-4" id="icon-volume" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-              <svg class="w-4 h-4 hidden" id="icon-muted" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+        <div class="settings-card bg-cinema-card border border-cinema-border rounded-xl p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="font-medium text-cinema-text">Grano de Película</p>
+              <p class="text-sm text-cinema-muted mt-0.5">Añade textura visual de película clásica</p>
+            </div>
+            <button class="w-12 h-6 rounded-full bg-cinema-amber relative transition-colors active" id="toggle-grain" role="switch" aria-checked="true">
+              <span class="absolute top-1 left-1 w-4 h-4 rounded-full bg-cinema-bg transition-transform translate-x-6"></span>
             </button>
-            <input type="range" id="player-volume" min="0" max="100" value="80"
-                   class="w-20 h-1 rounded-full accent-cinema-amber cursor-pointer"
-                   aria-label="Volumen del reproductor" />
           </div>
-
-          <button class="player-btn hidden md:flex" id="btn-fullscreen" onclick="CinemaStream.player.requestFullscreen()" aria-label="Pantalla completa">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-          </button>
         </div>
-
       </div>
+    </section>
 
-      <!-- Hidden audio/video elements -->
-      <audio id="audio-player" preload="none" aria-hidden="true"></audio>
-      <video id="video-player" preload="none" class="hidden" aria-hidden="true"></video>
-    </div>
-
-  </div><!-- end main wrapper -->
+  </main>
 
   <!-- ═══════════════════════════════════════════
-       TOAST NOTIFICATIONS
+       PERSISTENT MEDIA PLAYER BAR (Global)
   ══════════════════════════════════════════════ -->
-  <div id="toast-container" class="fixed bottom-24 right-4 z-[100] flex flex-col gap-2 pointer-events-none" aria-live="assertive" aria-atomic="true"></div>
+  <div id="player-bar"
+       class="fixed bottom-0 left-0 right-0 lg:left-64 z-50
+                bg-cinema-surface/95 backdrop-blur-xl border-t border-cinema-border
+                transform translate-y-full transition-transform duration-500 ease-in-out"
+       role="region" aria-label="Reproductor de medios" aria-live="polite">
 
-  <!-- App JS -->
-  <script src="app.js"></script>
+    <div class="h-0.5 bg-cinema-border relative cursor-pointer group" id="progress-bar-container">
+      <div class="h-full bg-gradient-to-r from-cinema-amber to-cinema-accent transition-all duration-200" id="progress-bar-fill" style="width: 0%"></div>
+      <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-cinema-amber shadow-amber-sm opacity-0 group-hover:opacity-100 transition-opacity -translate-x-1/2 pointer-events-none" id="progress-thumb" style="left: 0%"></div>
+    </div>
+
+    <div class="flex items-center gap-4 px-4 md:px-6 py-3">
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <div class="w-10 h-10 rounded-lg bg-cinema-card border border-cinema-border flex-shrink-0 overflow-hidden flex items-center justify-center" id="player-thumb-wrap">
+          <svg class="w-5 h-5 text-cinema-amber" id="player-default-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M18 3v2h-2V3H8v2H6V3H4v18h2v-2h2v2h8v-2h2v2h2V3h-2z"/></svg>
+          <img id="player-thumb" src="" alt="" class="hidden w-full h-full object-cover" />
+        </div>
+        <div class="min-w-0">
+          <p class="text-cinema-text text-sm font-medium truncate" id="player-title">–</p>
+          <p class="text-cinema-muted text-xs truncate" id="player-subtitle">Selecciona un canal para comenzar</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1 md:gap-2">
+        <button class="player-btn text-cinema-muted hover:text-cinema-amber transition-colors p-2" id="btn-prev" aria-label="Anterior">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="player-btn-main w-10 h-10 rounded-full bg-cinema-amber text-cinema-bg flex items-center justify-center hover:scale-105 transition-transform" id="btn-play-pause" aria-label="Reproducir/Pausar">
+          <svg class="w-6 h-6" id="icon-play" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="w-6 h-6 hidden" id="icon-pause" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="player-btn text-cinema-muted hover:text-cinema-amber transition-colors p-2" id="btn-next" aria-label="Siguiente">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 md:gap-3">
+        <div class="hidden md:flex items-center gap-2">
+          <button class="player-btn text-cinema-muted hover:text-cinema-amber transition-colors" id="btn-mute" aria-label="Silenciar">
+            <svg class="w-4 h-4" id="icon-volume" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+            <svg class="w-4 h-4 hidden" id="icon-muted" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3z"/></svg>
+          </button>
+          <input type="range" id="player-volume" min="0" max="100" value="80" class="w-20 h-1 rounded-full accent-cinema-amber cursor-pointer" aria-label="Volumen" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main wrapper -->
+
+<!-- Toast notifications container -->
+<div id="toast-container" class="fixed bottom-24 right-4 z-[100] flex flex-col gap-2 pointer-events-none" aria-live="assertive"></div>
+
+<!-- App JS -->
+<script src="\\epg-engine.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

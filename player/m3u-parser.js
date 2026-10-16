@@ -1,14 +1,14 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
- * ║  CinemaStream · player/m3u-parser.js                            ║
- * ║  Parser M3U / M3U8 — JavaScript Puro (ES2020+)                  ║
+ * ║  Castify · player/m3u-parser.js                                  ║
+ * ║  Parser M3U / M3U8 — JavaScript Puro (ES2020+)                   ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║  Responsabilidades:                                              ║
- * ║   1. Parsear el texto de una lista M3U / M3U8 en objetos JS     ║
- * ║   2. Cargar listas desde una URL remota (con fallback CORS)     ║
+ * ║   1. Parsear el texto de una lista M3U / M3U8 en objetos JS      ║
+ * ║   2. Cargar listas desde una URL remota (con fallback CORS)      ║
  * ║   3. Leer archivos locales con la File API del navegador         ║
- * ║   4. Agrupar canales por categoría (group-title)                ║
- * ║   5. Detectar tipo de stream (HLS / MP4 / audio)                ║
+ * ║   4. Agrupar canales por categoría (group-title)                 ║
+ * ║   5. Detectar tipo de stream (HLS / MP4 / audio)                 ║
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
@@ -49,7 +49,7 @@ const AUDIO_EXTENSIONS = new Set(['.mp3', '.aac', '.ogg', '.flac', '.m4a', '.opu
 /**
  * Determina el tipo de stream a partir de su URL.
  *
- * @param {string} url - URL del recurso multimedia
+ * @param {string} url URL del recurso multimedia
  * @returns {'hls' | 'video' | 'audio' | 'unknown'}
  *
  * Ejemplos:
@@ -89,18 +89,18 @@ function detectStreamType(url) {
  * Estructura de datos que representa un canal/entrada de la lista.
  *
  * @typedef {Object} M3UChannel
- * @property {string}  id          - ID único generado (canal_<índice>)
- * @property {string}  title       - Nombre del canal (#EXTINF … ,Nombre)
- * @property {string}  url         - URL del stream
- * @property {string}  group       - Grupo/categoría (group-title="…")
- * @property {string}  logo        - URL del logo (tvg-logo="…")
- * @property {string}  tvgId       - ID EPG del canal (tvg-id="…")
- * @property {string}  tvgName     - Nombre EPG (tvg-name="…")
- * @property {string}  language    - Idioma (tvg-language="…")
- * @property {string}  country     - País (tvg-country="…")
- * @property {string}  streamType  - 'hls' | 'video' | 'audio' | 'unknown'
- * @property {number}  duration    - Duración en segundos (-1 = stream en vivo)
- * @property {number}  lineNumber  - Línea del fichero donde apareció la URL
+ * @property {string}  id          ID único generado (canal_<índice>)
+ * @property {string}  title       Nombre del canal (#EXTINF … ,Nombre)
+ * @property {string}  url         URL del stream
+ * @property {string}  group       Grupo/categoría (group-title="…")
+ * @property {string}  logo        URL del logo (tvg-logo="…")
+ * @property {string}  tvgId       ID EPG del canal (tvg-id="…")
+ * @property {string}  tvgName     Nombre EPG (tvg-name="…")
+ * @property {string}  language    Idioma (tvg-language="…")
+ * @property {string}  country     País (tvg-country="…")
+ * @property {string}  streamType  'hls' | 'video' | 'audio' | 'unknown'
+ * @property {number}  duration    Duración en segundos (-1 = stream en vivo)
+ * @property {number}  lineNumber  Línea del fichero donde apareció la URL
  */
 
 /**
@@ -113,8 +113,8 @@ function detectStreamType(url) {
  *  ④ La línea siguiente a #EXTINF que no empieza con '#' es la URL
  *  ⑤ Construye un objeto M3UChannel y lo añade al array de resultados
  *
- * @param {string} rawText - Contenido textual del archivo M3U
- * @returns {M3UChannel[]} - Array de canales parseados
+ * @param {string} rawText Contenido textual del archivo M3U
+ * @returns {Object} Objeto con la epgUrl global y el array de canales parseados
  */
 function parseM3UText(rawText) {
 
@@ -127,19 +127,18 @@ function parseM3UText(rawText) {
   const lines = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
   /* ── Paso 2: Verificar que es un archivo M3U ────────────── */
-  // La primera línea no vacía debería ser #EXTM3U, pero no es obligatorio
   const firstContent = lines.find(l => l.trim().length > 0) ?? '';
   const isExtended   = firstContent.trim().startsWith('#EXTM3U');
 
-  // Advertencia suave: continuar aunque no tenga cabecera estándar
   if (!isExtended) {
     console.warn('[M3UParser] La lista no comienza con #EXTM3U. Se intentará parsear igualmente.');
   }
 
   /* ── Paso 3: Iterar línea a línea ───────────────────────── */
-  const channels   = [];    // Array de resultados final
-  let   currentMeta = null; // Metadatos del canal actual (rellenados por #EXTINF)
-  let   channelIdx  = 0;    // Contador para generar IDs únicos
+  let   globalEpgUrl = '';  // <--- MODIFICACIÓN: Capturar EPG global
+  const channels     = [];
+  let   currentMeta  = null;
+  let   channelIdx   = 0;
 
   for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
     const line = lines[lineIdx].trim();
@@ -147,16 +146,18 @@ function parseM3UText(rawText) {
     // Ignorar líneas vacías
     if (!line) continue;
 
-    /* ── Caso A: Línea de metadatos #EXTINF ──────────────── */
-    if (line.startsWith('#EXTINF')) {
-      currentMeta = extractExtinfMetadata(line);
-      continue; // Pasar a la siguiente línea (que debería ser la URL)
+    /* ── Caso A: Directiva especial de la cabecera (#EXTM3U) ── */
+    if (line.startsWith('#EXTM3U') || line.startsWith('#EXTM3U:')) {
+      const epgMatch = line.match(/url-tvg="([^"]+)"/i) || line.match(/tvg-url="([^"]+)"/i);
+      if (epgMatch) {
+        globalEpgUrl = epgMatch[1];
+      }
+      continue;
     }
 
-    /* ── Caso B: Directiva especial de la cabecera ────────── */
-    // #EXTM3U puede tener parámetros → los extraemos para metadatos globales
-    if (line.startsWith('#EXTM3U') || line.startsWith('#EXTM3U:')) {
-      // Podría contener url-tvg="…" con la fuente EPG, lo ignoramos por ahora
+    /* ── Caso B: Línea de metadatos #EXTINF ──────────────── */
+    if (line.startsWith('#EXTINF')) {
+      currentMeta = extractExtinfMetadata(line);
       continue;
     }
 
@@ -164,19 +165,16 @@ function parseM3UText(rawText) {
     if (line.startsWith('#')) continue;
 
     /* ── Caso D: URL del stream ───────────────────────────── */
-    // Validación básica de URL (debe contener "://" o ser una ruta relativa)
     if (!line.includes('://') && !line.startsWith('/')) {
       console.warn(`[M3UParser] Línea ${lineIdx + 1} no parece una URL válida: "${line.slice(0, 60)}…"`);
       currentMeta = null;
       continue;
     }
 
-    // Construir el objeto de canal con los metadatos (o valores por defecto)
     const channel = buildChannel(line, currentMeta, channelIdx, lineIdx + 1);
     channels.push(channel);
     channelIdx++;
 
-    // Resetear metadatos para el próximo canal
     currentMeta = null;
   }
 
@@ -185,8 +183,13 @@ function parseM3UText(rawText) {
     throw new Error('No se encontraron canales en la lista. Verifica que el formato sea M3U correcto.');
   }
 
-  console.info(`[M3UParser] ✓ Parseados ${channels.length} canales.`);
-  return channels;
+  console.info(`[M3UParser] ✓ Parseados ${channels.length} canales. EPG Global: ${globalEpgUrl || 'Ninguna'}`);
+
+  // Retornamos la estructura completa conservando compatibilidad
+  return {
+    epgUrl: globalEpgUrl,
+    channels: channels
+  };
 }
 
 
@@ -201,37 +204,27 @@ function parseM3UText(rawText) {
  *   #EXTINF:<duración> tvg-id="id" tvg-name="nombre" tvg-logo="url"
  *            group-title="grupo",<Título visible>
  *
- * @param {string} extinf - La línea completa que empieza con #EXTINF
- * @returns {Object} - Objeto con todos los metadatos extraídos
+ * @param {string} extinf La línea completa que empieza con #EXTINF
+ * @returns {Object} Objeto con todos los metadatos extraídos
  */
 function extractExtinfMetadata(extinf) {
 
-  /* ── Duración ─────────────────────────────────────────────
-     El primer número tras #EXTINF: es la duración en segundos.
-     -1 indica stream en vivo (sin duración definida).
-  ─────────────────────────────────────────────────────────── */
+  /* ── Duración ───────────────────────────────────────────── */
   const durationMatch = extinf.match(/^#EXTINF:\s*(-?\d+(?:\.\d+)?)/);
   const duration      = durationMatch ? parseFloat(durationMatch[1]) : -1;
 
-  /* ── Título ───────────────────────────────────────────────
-     El título está DESPUÉS de la última coma de la línea.
-     Ejemplo: #EXTINF:-1 tvg-name="Canal" ,Canal HD ← aquí
-  ─────────────────────────────────────────────────────────── */
+  /* ── Título ─────────────────────────────────────────────── */
   const lastCommaIdx = extinf.lastIndexOf(',');
   const title        = lastCommaIdx >= 0
-    ? extinf.slice(lastCommaIdx + 1).trim()
-    : '';
+      ? extinf.slice(lastCommaIdx + 1).trim()
+      : '';
 
-  /* ── Atributos clave=valor ────────────────────────────────
-     Muchos atributos usan el formato: nombre="valor"
-     Usamos una regex genérica que captura cualquier par.
-  ─────────────────────────────────────────────────────────── */
+  /* ── Atributos clave=valor ──────────────────────────────── */
   const attrRegex = /([\w-]+)="([^"]*)"/g;
   const attrs     = {};
   let   match;
 
   while ((match = attrRegex.exec(extinf)) !== null) {
-    // match[1] = nombre del atributo, match[2] = valor
     attrs[match[1].toLowerCase()] = match[2];
   }
 
@@ -244,7 +237,6 @@ function extractExtinfMetadata(extinf) {
     group:       attrs['group-title']  ?? attrs['group'] ?? 'Sin grupo',
     language:    attrs['tvg-language'] ?? '',
     country:     attrs['tvg-country']  ?? '',
-    // Atributo de radio (algunos proveedores lo marcan explícitamente)
     radio:       attrs['radio']?.toLowerCase() === 'true',
   };
 }
@@ -257,15 +249,14 @@ function extractExtinfMetadata(extinf) {
 /**
  * Ensambla el objeto M3UChannel definitivo combinando la URL con los metadatos.
  *
- * @param {string}      url        - URL del stream
- * @param {Object|null} meta       - Metadatos de #EXTINF (puede ser null)
- * @param {number}      index      - Índice global del canal
- * @param {number}      lineNumber - Número de línea en el fichero original
+ * @param {string}      url        URL del stream
+ * @param {Object|null} meta       Metadatos de #EXTINF (puede ser null)
+ * @param {number}      index      Índice global del canal
+ * @param {number}      lineNumber Número de línea en el fichero original
  * @returns {M3UChannel}
  */
 function buildChannel(url, meta, index, lineNumber) {
 
-  // Si no hay metadatos (lista sin #EXTINF), usar valores mínimos
   const safeMeta = meta ?? {
     title:    `Canal ${index + 1}`,
     group:    'Sin grupo',
@@ -278,14 +269,13 @@ function buildChannel(url, meta, index, lineNumber) {
     radio:    false,
   };
 
-  // Detectar tipo de stream automáticamente
-  // Si el propio metadato lo marca como radio, forzamos audio
-  const rawType   = detectStreamType(url);
+  const rawType    = detectStreamType(url);
   const streamType = safeMeta.radio ? 'audio' : rawType;
 
   return {
     id:         `canal_${index}`,
     title:      safeMeta.title    || `Canal ${index + 1}`,
+    name:       safeMeta.title    || `Canal ${index + 1}`, // Alias de compatibilidad
     url:        url.trim(),
     group:      safeMeta.group    || 'Sin grupo',
     logo:       safeMeta.logo     || '',
@@ -296,7 +286,6 @@ function buildChannel(url, meta, index, lineNumber) {
     streamType,
     duration:   safeMeta.duration ?? -1,
     lineNumber,
-    // Flag de conveniencia: ¿es un stream en vivo?
     isLive:     safeMeta.duration === -1 || safeMeta.duration < 0,
   };
 }
@@ -309,15 +298,8 @@ function buildChannel(url, meta, index, lineNumber) {
 /**
  * Organiza un array plano de canales en un Map agrupado por group-title.
  *
- * @param {M3UChannel[]} channels - Array plano de canales
- * @returns {Map<string, M3UChannel[]>} - Mapa { grupo → [canales] }
- *
- * Ejemplo de salida:
- *   Map {
- *     'Noticias'      → [canal1, canal2, …],
- *     'Deportes'      → [canal3, …],
- *     'Sin grupo'     → [canal5, …],
- *   }
+ * @param {M3UChannel[]} channels Array plano de canales
+ * @returns {Map<string, M3UChannel[]>} Mapa { grupo → [canales] }
  */
 function groupChannelsByCategory(channels) {
   const groups = new Map();
@@ -331,13 +313,12 @@ function groupChannelsByCategory(channels) {
     groups.get(key).push(channel);
   }
 
-  // Ordenar los grupos alfabéticamente (excepto "Sin grupo" que va al final)
   const sorted = new Map(
-    [...groups.entries()].sort(([a], [b]) => {
-      if (a === 'Sin grupo') return 1;
-      if (b === 'Sin grupo') return -1;
-      return a.localeCompare(b, 'es');
-    })
+      [...groups.entries()].sort(([a], [b]) => {
+        if (a === 'Sin grupo') return 1;
+        if (b === 'Sin grupo') return -1;
+        return a.localeCompare(b, 'es');
+      })
   );
 
   return sorted;
@@ -351,26 +332,19 @@ function groupChannelsByCategory(channels) {
 /**
  * Descarga una lista M3U desde una URL remota.
  *
- * Estrategia:
- *  1. Intenta descargar directamente con fetch()
- *  2. Si falla por CORS/red → prueba cada proxy de CORS_PROXIES
- *  3. Si el contenido no es M3U → lo trata como URL de stream único
- *
- * @param {string}   url            - URL de la lista M3U
- * @param {Function} [onProgress]   - Callback opcional de progreso (mensaje:string)
- * @returns {Promise<M3UChannel[]>} - Canales parseados
+ * @param {string}   url            URL de la lista M3U
+ * @param {Function} [onProgress]   Callback opcional de progreso (mensaje:string)
+ * @returns {Promise<Object>} Objeto con canales y epgUrl
  * @throws {Error} si ningún proxy funciona
  */
 async function loadFromUrl(url, onProgress = () => {}) {
 
-  /* ── Validación previa de la URL ────────────────────────── */
   if (!url || !url.includes('://')) {
     throw new Error('La URL no tiene un formato válido. Debe comenzar con http:// o https://');
   }
 
   let lastError = null;
 
-  /* ── Iterar sobre los proxies disponibles ───────────────── */
   for (let i = 0; i < CORS_PROXIES.length; i++) {
     const proxyFn    = CORS_PROXIES[i];
     const targetUrl  = proxyFn(url);
@@ -379,19 +353,13 @@ async function loadFromUrl(url, onProgress = () => {}) {
     onProgress(`Intentando conexión ${proxyLabel}…`);
 
     try {
-      /* ── fetch() con timeout ─────────────────────────────
-         AbortSignal.timeout() cancela automáticamente si
-         el servidor tarda más de FETCH_TIMEOUT_MS.
-      ──────────────────────────────────────────────────── */
       const response = await fetch(targetUrl, {
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         headers: {
-          // Algunos servidores requieren User-Agent para servir contenido
           'Accept': 'application/x-mpegurl, application/vnd.apple.mpegurl, */*',
         },
       });
 
-      // HTTP 2xx → éxito
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -399,31 +367,24 @@ async function loadFromUrl(url, onProgress = () => {}) {
       const text = await response.text();
       onProgress('Archivo descargado. Procesando…');
 
-      /* ── ¿Es realmente un M3U? ───────────────────────────
-         Verificar si contiene marcadores M3U.
-         Si no, podría ser una URL de stream directo.
-      ─────────────────────────────────────────────────── */
       if (text.includes('#EXTM3U') || text.includes('#EXTINF')) {
         return parseM3UText(text);
       }
 
-      // URL apunta directamente a un stream (no a una lista)
       console.info('[M3UParser] La URL parece un stream directo, no una lista.');
       const singleStream = buildChannel(url, null, 0, 0);
       singleStream.title = 'Stream directo';
-      return [singleStream];
+      return { epgUrl: '', channels: [singleStream] };
 
     } catch (err) {
       lastError = err;
       console.warn(`[M3UParser] Fallo con ${proxyLabel}: ${err.message}`);
-      // Continuar con el siguiente proxy
     }
   }
 
-  /* ── Todos los intentos fallaron ────────────────────────── */
   throw new Error(
-    `No se pudo cargar la lista. Último error: ${lastError?.message ?? 'Desconocido'}. ` +
-    'Verifica la URL y asegúrate de que el servidor permite acceso externo.'
+      `No se pudo cargar la lista. Último error: ${lastError?.message ?? 'Desconocido'}. ` +
+      'Verifica la URL y asegúrate de que el servidor permite acceso externo.'
   );
 }
 
@@ -434,60 +395,51 @@ async function loadFromUrl(url, onProgress = () => {}) {
 
 /**
  * Lee un archivo M3U seleccionado por el usuario con <input type="file">
- * usando la File API del navegador (FileReader).
  *
- * @param {File}     file         - Objeto File del input o drag-and-drop
- * @param {Function} [onProgress] - Callback de progreso
- * @returns {Promise<M3UChannel[]>}
+ * @param {File}     file         Objeto File del input o drag-and-drop
+ * @param {Function} [onProgress] Callback de progreso
+ * @returns {Promise<Object>}
  * @throws {Error} si el archivo es muy grande, tiene extensión incorrecta o está corrupto
  */
 function loadFromFile(file, onProgress = () => {}) {
   return new Promise((resolve, reject) => {
 
-    /* ── Validaciones del archivo ───────────────────────────── */
     if (!file) {
       reject(new Error('No se ha seleccionado ningún archivo.'));
       return;
     }
 
-    // Verificar tamaño máximo
     if (file.size > MAX_FILE_SIZE_BYTES) {
       reject(new Error(`El archivo (${(file.size / 1024 / 1024).toFixed(1)} MB) supera el límite de 50 MB.`));
       return;
     }
 
-    // Verificar extensión (flexible: acepta .m3u, .m3u8, .txt)
     const allowedExts = ['.m3u', '.m3u8', '.txt'];
     const fileName    = file.name.toLowerCase();
     const hasValidExt = allowedExts.some(ext => fileName.endsWith(ext));
 
     if (!hasValidExt) {
-      // Advertencia no bloqueante: algunos archivos M3U no tienen extensión
       console.warn(`[M3UParser] Extensión no reconocida: ${file.name}. Se intentará parsear.`);
     }
 
     onProgress(`Leyendo "${file.name}" (${(file.size / 1024).toFixed(0)} KB)…`);
 
-    /* ── Leer el archivo como texto ─────────────────────────── */
     const reader = new FileReader();
 
-    // Evento: lectura completada con éxito
     reader.onload = (event) => {
       try {
-        onProgress('Archivo leído. Procesando canales…');
-        const channels = parseM3UText(event.target.result);
-        resolve(channels);
+        onProgress('Archivo leído. Procesando canales y EPG…');
+        const resultado = parseM3UText(event.target.result);
+        resolve(resultado);
       } catch (parseError) {
         reject(parseError);
       }
     };
 
-    // Evento: error durante la lectura
     reader.onerror = () => {
       reject(new Error(`Error al leer el archivo "${file.name}". ¿El archivo está dañado?`));
     };
 
-    // Evento: progreso de lectura (útil para archivos grandes)
     reader.onprogress = (event) => {
       if (event.lengthComputable) {
         const percent = Math.round((event.loaded / event.total) * 100);
@@ -495,9 +447,6 @@ function loadFromFile(file, onProgress = () => {}) {
       }
     };
 
-    /* ── Iniciar la lectura en UTF-8 ────────────────────────── */
-    // La mayoría de listas M3U usan UTF-8, pero algunas usan Latin-1
-    // Si hay problemas de caracteres, cambiar a 'windows-1252'
     reader.readAsText(file, 'UTF-8');
   });
 }
@@ -510,32 +459,27 @@ function loadFromFile(file, onProgress = () => {}) {
 /**
  * Filtra un array de canales por texto de búsqueda y/o grupo.
  *
- * @param {M3UChannel[]} channels  - Lista completa de canales
- * @param {Object}       filters   - Criterios de filtro
- * @param {string}       [filters.query]  - Texto a buscar en título/grupo
- * @param {string}       [filters.group]  - Filtrar por grupo exacto
- * @param {string}       [filters.type]   - Filtrar por tipo: 'hls'|'video'|'audio'
- * @returns {M3UChannel[]} - Canales que cumplen todos los criterios
+ * @param {M3UChannel[]} channels  Lista completa de canales
+ * @param {Object}       filters   Criterios de filtro
+ * @param {string}       [filters.query]  Texto a buscar en título/grupo
+ * @param {string}       [filters.group]  Filtrar por grupo exacto
+ * @param {string}       [filters.type]   Filtrar por tipo: 'hls'|'video'|'audio'
+ * @returns {M3UChannel[]} Canales que cumplen todos los criterios
  */
 function filterChannels(channels, { query = '', group = '', type = '' } = {}) {
 
-  // Normalizar el texto de búsqueda: minúsculas y sin acentos
   const normalizedQuery = removeDiacritics(query.toLowerCase().trim());
 
   return channels.filter(channel => {
 
-    /* ── Filtro por texto ──────────────────────────────────── */
     if (normalizedQuery) {
       const searchableText = removeDiacritics(
-        `${channel.title} ${channel.group} ${channel.tvgName} ${channel.country}`.toLowerCase()
+          `${channel.title} ${channel.group} ${channel.tvgName} ${channel.country}`.toLowerCase()
       );
       if (!searchableText.includes(normalizedQuery)) return false;
     }
 
-    /* ── Filtro por grupo ──────────────────────────────────── */
     if (group && channel.group !== group) return false;
-
-    /* ── Filtro por tipo de stream ─────────────────────────── */
     if (type && channel.streamType !== type) return false;
 
     return true;
@@ -544,7 +488,6 @@ function filterChannels(channels, { query = '', group = '', type = '' } = {}) {
 
 /**
  * Elimina acentos y diacríticos de una cadena para búsquedas más flexibles.
- * "Música" → "Musica", "año" → "ano"
  *
  * @param {string} str
  * @returns {string}
@@ -558,26 +501,11 @@ function removeDiacritics(str) {
    SECCIÓN 10 · EXPORTACIÓN PÚBLICA
 ───────────────────────────────────────────────────────────────── */
 
-/**
- * Objeto público del módulo M3UParser.
- * Expone sólo las funciones necesarias para el resto de la aplicación.
- */
 window.M3UParser = {
-  /** Parsea texto M3U crudo → array de canales */
   parse:         parseM3UText,
-
-  /** Carga lista desde URL remota (con fallback CORS) → Promise<canal[]> */
   fromUrl:       loadFromUrl,
-
-  /** Lee un archivo local → Promise<canal[]> */
   fromFile:      loadFromFile,
-
-  /** Agrupa canales por categoría → Map<grupo, canal[]> */
   groupBy:       groupChannelsByCategory,
-
-  /** Filtra canales por criterios → canal[] */
   filter:        filterChannels,
-
-  /** Detecta tipo de stream de una URL */
   detectType:    detectStreamType,
 };
