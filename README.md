@@ -57,7 +57,7 @@ Diseñada con un enfoque **Vanilla JS puro**, garantiza un rendimiento óptimo, 
 |                 |   [ ► ] [ ◄◄ ] [ ►► ] [ 🔊 ===== ]    02:15 / 45:00   |
 +-------------------------------------------------------------------------+
 ```
-🚀 Instalación Rápida
+## 🚀 Instalación Rápida
 Al no requerir compilación ni empaquetadores (Node.js/Webpack), desplegar Castify es rápido y sencillo.
 
 1. Clonar el repositorio
@@ -72,7 +72,7 @@ npx serve .
 ```
 Visita `http://localhost:8080` en tu navegador.
 
-📁 Arquitectura del Proyecto
+## 📁 Arquitectura del Proyecto
 El proyecto sigue una arquitectura modular limpia orientada a objetos de configuración e instancias globales con responsabilidades únicas:
 ```Text
 +----------------------------------------------------------------------------------------+
@@ -89,7 +89,7 @@ El proyecto sigue una arquitectura modular limpia orientada a objetos de configu
 
 Módulos ClaveMóduloArchivoResponsabilidadCinemaStreamapp.jsControlador principal de la aplicación e inicializador SPA.PlayerEngineapp.jsGestión de eventos de reproducción HTML5/HLS, volumen y barra flotante.EPGEngineepg-engine.jsDescarga, parseo XMLTV y vinculación de horarios de programación EPG.PlaylistUIplaylist-ui.jsRenderizado por grupos, filtrado A-Z, búsqueda en listas e interacción.M3UParserm3u-parser.jsParsing eficiente de listas M3U/M3U8 y extracción de url-tvg.
 
-⌨️ Atajos de Teclado del Reproductor
+## ⌨️ Atajos de Teclado del Reproductor
 ```Text
 +-------------------------------------------------------------------------+
 |              Tecla            |                   Acción                |
