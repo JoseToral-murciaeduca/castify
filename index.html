@@ -83,20 +83,20 @@
     const audioplayer = document.getElementById('my-audio');
     
     videoplayer.addEventListener('play',() => {
-      document.body.classList.add('cinema-active');
+      document.body.classList.add('cinematic-dimmer.active');
     });
     
     videoplayer.addEventListener('pause',() => {
-      document.body.classList.remove('cinema-active');
+      document.body.classList.remove('cinematic-dimmer.active');
     });
     
     videoplayer.addEventListener('ended',() => {
-      document.body.classList.remove('cinema-active');
+      document.body.classList.remove('cinematic-dimmer.active');
     });
     
     // Evento cuando reproduce AUDIO (Radio / Podcast) -> NO activa el modo cine
     audioplayer.addEventListener('play',() => {
-      document.body.classList.remove('cinema-active');
+      document.body.classList.remove('cinematic-dimmer.active');
     });
     
   </script>
