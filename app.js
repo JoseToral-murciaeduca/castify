@@ -229,10 +229,10 @@ const PlayerEngine = {
 
 const CinemaEffects = {
   activatePlayback(isVideo) {
-    document.body.classList.add('cinema-active');
+    document.body.classList.add('is-playing', 'cinema-active');
   },
   deactivatePlayback() {
-    document.body.classList.remove('cinema-active');
+    document.body.classList.remove('is-playing', 'cinema-active');
   }
 };
 
