@@ -62,14 +62,14 @@ Al no requerir compilación ni empaquetadores (Node.js/Webpack), desplegar Casti
 
 1. Clonar el repositorio
 
-``Bash
+```Bash
 git clone [https://github.com/tu-usuario/castify.git](https://github.com/tu-usuario/castify.git)
 cd castify
-``
+```
 Con Node.js(Serve)
-``Bash
+```Bash
 npx serve .
-``
+```
 Visita `http://localhost:8080` en tu navegador.
 
 📁 Arquitectura del Proyecto
