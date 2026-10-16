@@ -29,7 +29,7 @@ class PlaylistUI {
     this._activeGroup   = 'all'; // Grupo seleccionado ('all' = todos)
     this._searchQuery   = '';    // Texto de búsqueda actual
     this._isLoading     = false; // ¿Está cargando una lista?
-    this._epgUrl        = '';    // <--- MODIFICACIÓN: URL EPG global extraída de la lista
+    this._epgUrl        = '';    // URL EPG global extraída de la lista
 
     /* ── Referencias DOM ──────────────────────────────────── */
     this._dom = {};
@@ -39,7 +39,6 @@ class PlaylistUI {
   init() {
     this._dom = {
       /* ── Importador ───────────────────────────────────── */
-      // Campo de URL
       urlInput:          document.getElementById('m3u-url-input'),
       btnLoadUrl:        document.getElementById('m3u-btn-load-url'),
 
@@ -87,19 +86,15 @@ class PlaylistUI {
   ══════════════════════════════════════════════════════════ */
 
   _bindImportEvents() {
-
-    /* ── Tabs de importación ─────────────────────────────── */
     this._dom.tabs?.forEach(tab => {
       tab.addEventListener('click', () => this._switchImportTab(tab.dataset.target));
     });
 
-    /* ── Cargar por URL ─────────────────────────────────── */
     this._dom.btnLoadUrl?.addEventListener('click', () => {
       const url = this._dom.urlInput?.value.trim();
       this._importFromUrl(url);
     });
 
-    // También activar al pulsar Enter en el campo
     this._dom.urlInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const url = this._dom.urlInput.value.trim();
@@ -107,13 +102,11 @@ class PlaylistUI {
       }
     });
 
-    /* ── Selección de archivo mediante <input type="file"> ─ */
     this._dom.fileInput?.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) this._importFromFile(file);
     });
 
-    /* ── Drag & Drop ─────────────────────────────────────── */
     const dz = this._dom.dropZone;
     if (dz) {
       ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
@@ -130,8 +123,7 @@ class PlaylistUI {
         if (file) {
           this._importFromFile(file);
         } else {
-          const url = e.dataTransfer.getData('text/uri-list')
-              || e.dataTransfer.getData('text/plain');
+          const url = e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain');
           if (url && url.startsWith('http')) {
             if (this._dom.urlInput) this._dom.urlInput.value = url;
             this._importFromUrl(url);
@@ -159,17 +151,15 @@ class PlaylistUI {
     this._dom.panelFile?.classList.toggle('hidden', target !== 'file');
   }
 
-  /* ── Importar desde URL ─────────────────────────────────── */
   async _importFromUrl(url) {
     if (!url) {
-      this._showStatus('error', '⚠ Introduce una URL válida (http:// or https://)');
+      this._showStatus('error', '⚠ Introduce una URL válida (http:// o https://)');
       return;
     }
 
     this._setLoadingState(true, 'Conectando al servidor…');
 
     try {
-      /* <--- MODIFICACIÓN: El parser ahora devuelve un objeto { epgUrl, channels } */
       const result = await window.M3UParser.fromUrl(url, (msg) => {
         this._showStatus('loading', msg);
       });
@@ -185,12 +175,10 @@ class PlaylistUI {
     }
   }
 
-  /* ── Importar desde archivo local ───────────────────────── */
   async _importFromFile(file) {
     this._setLoadingState(true, `Leyendo "${file.name}"…`);
 
     try {
-      /* <--- MODIFICACIÓN: El parser ahora devuelve un objeto { epgUrl, channels } */
       const result = await window.M3UParser.fromFile(file, (msg) => {
         this._showStatus('loading', msg);
       });
@@ -242,7 +230,7 @@ class PlaylistUI {
     this._dom.playlistWrap?.classList.add('hidden');
     this._dom.playerSection?.classList.add('hidden');
 
-    if (this._dom.urlInput)  this._dom.urlInput.value  = '';
+    if (this._dom.urlInput)    this._dom.urlInput.value    = '';
     if (this._dom.searchInput) this._dom.searchInput.value = '';
 
     this._showStatus('info', 'Lista borrada. Carga una nueva lista M3U.');
@@ -299,7 +287,7 @@ class PlaylistUI {
             a.title.localeCompare(b.title, 'es')
         );
       } else {
-        this._applyFilters(false);
+        this._applyFilters();
         return;
       }
       this._renderChannelList(this._filtered);
