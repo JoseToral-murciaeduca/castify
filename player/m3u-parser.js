@@ -155,7 +155,7 @@ function parseM3UText(rawText) {
 
     /* ── Caso B: Directiva especial de la cabecera ────────── */
     // #EXTM3U puede tener parámetros → los extraemos para metadatos globales
-    if (line.startsWith('#EXTM3U')) {
+    if (line.startsWith('#EXTM3U') || line.startsWith('#EXTM3U:')) {
       // Podría contener url-tvg="…" con la fuente EPG, lo ignoramos por ahora
       continue;
     }
