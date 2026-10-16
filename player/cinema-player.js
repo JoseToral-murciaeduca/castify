@@ -1,7 +1,7 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
- * ║  CinemaStream · player/cinema-player.js                         ║
- * ║  Motor de Reproducción Cinematográfico — JavaScript Puro        ║
+ * ║  Castify · player/cinema-player.js                               ║
+ * ║  Motor de Reproducción Cinematográfico — JavaScript Puro         ║
  * ╠══════════════════════════════════════════════════════════════════╣
  * ║  Responsabilidades:                                              ║
  * ║   1. Gestionar la reproducción de vídeo y audio                  ║

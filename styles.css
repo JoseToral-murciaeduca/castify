@@ -100,6 +100,22 @@ body.is-playing #player-bar {
   box-shadow: 0 -4px 32px rgba(245, 166, 35, 0.12);
 }
 
+/* Modification for cinema mode on Body */
+body {
+  background-color: #0B0B0F;
+  transition: background-color 0.5s ease;
+}
+body.cinema-active {
+  background-color: #020204;
+}
+body.cinema-active .main-content {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+body.cinema-active nav a.active {
+  text-shadow: 0 0 10px #F5A623;
+}
+
 /* ── 7. Navigation Items ──────────────────────────────── */
 .nav-item {
   display: flex;
