@@ -36,9 +36,6 @@ body {
   padding-bottom: var(--player-h);
 }
 
-.section-panel {
-  padding-top: 2.5rem;
-}
 
 /* ── 3. Custom Scrollbar ──────────────────────────────── */
 .custom-scrollbar::-webkit-scrollbar,
@@ -709,6 +706,7 @@ body.cinema-active nav a.active {
 /* ── 21. Section Panels ───────────────────────────────── */
 .section-panel {
   animation: sectionFadeIn 0.35s ease;
+  padding-top: 2.5rem;
 }
 
 @keyframes sectionFadeIn {
