@@ -1,16 +1,21 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
- * ║  Castify · player/cinema-player.js                               ║
- * ║  Motor de Reproducción Cinematográfico — JavaScript Puro         ║
+ * ║ Castify · player/cinema-player.js                                ║
+ * ║ Motor de Reproducción Cinematográfico — JavaScript Puro          ║
  * ╠══════════════════════════════════════════════════════════════════╣
- * ║  Responsabilidades:                                              ║
- * ║   1. Gestionar la reproducción de vídeo y audio                  ║
- * ║   2. Soporte HLS nativo mediante hls.js                          ║
- * ║   3. Controles personalizados: play/pausa, barra de progreso,    ║
- * ║      volumen, silencio, pantalla completa, velocidad             ║
- * ║   4. Activar/desactivar el modo cine SOLO cuando es vídeo        ║
- * ║   5. Emitir eventos al sistema para sincronizar la UI global     ║
+ * ║ Responsabilidades:                                               ║
+ * ║ 1. Gestionar la reproducción de vídeo y audio                    ║
+ * ║ 2. Soporte HLS nativo mediante hls.js                            ║
+ * ║ 3. Controles personalizados: play/pausa, barra de progreso,      ║
+ * ║    volumen, silencio, pantalla completa, velocidad               ║
+ * ║ 4. Activar/desactivar el modo cine cinematográfico               ║
+ * ║ 5. Emitir eventos al sistema para sincronizar la UI global       ║
  * ╚══════════════════════════════════════════════════════════════════╝
+ *
+ * Dependencias externas:
+ *   - hls.js (window.Hls) → https://cdn.jsdelivr.net/npm/hls.js@latest
+ *
+ * NO depende de ningún framework (Vanilla JS puro, ES2020+).
  */
 
 'use strict';
@@ -19,26 +24,28 @@
    SECCIÓN 1 · CONFIGURACIÓN DEL REPRODUCTOR
 ───────────────────────────────────────────────────────────────── */
 
+/** Opciones por defecto del reproductor */
 const PLAYER_DEFAULTS = {
-  volume:            0.8,
-  muted:             false,
-  autoplay:          true,
-  dimmerOpacity:     0.55,
-  dimmerTransition:  700,
-  seekStep:          10,
-  volumeStep:        0.05,
+  volume: 0.8,            // Volumen inicial (0.0 – 1.0)
+  muted: false,           // ¿Iniciar silenciado?
+  autoplay: true,         // ¿Reproducir al cargar?
+  dimmerOpacity: 0.55,    // Opacidad del cinematic dimmer
+  dimmerTransition: 700,  // Duración (ms) de la transición del dimmer
+  seekStep: 10,           // Segundos que avanza/retrocede la tecla de flecha
+  volumeStep: 0.05,       // Paso de incremento del volumen con teclado
 };
 
+/** Opciones de HLS.js para optimizar streams en vivo */
 const HLS_CONFIG = {
-  enableWorker:           true,
-  lowLatencyMode:         true,
-  maxBufferLength:        30,
-  maxMaxBufferLength:     60,
-  liveSyncDurationCount:  3,
+  enableWorker: true,
+  lowLatencyMode: true,
+  maxBufferLength: 30,
+  maxMaxBufferLength: 60,
+  liveSyncDurationCount: 3,
   liveMaxLatencyDurationCount: 10,
   manifestLoadingMaxRetry: 3,
-  levelLoadingMaxRetry:    3,
-  fragLoadingMaxRetry:     3,
+  levelLoadingMaxRetry: 3,
+  fragLoadingMaxRetry: 3,
 };
 
 
@@ -51,16 +58,16 @@ class CinemaPlayer {
   constructor(options = {}) {
     this._opts = { ...PLAYER_DEFAULTS, ...options };
     this._state = {
-      currentChannel:  null,
-      playlist:        [],
-      playlistIndex:   -1,
-      isPlaying:       false,
-      isMuted:         false,
-      volume:          this._opts.volume,
-      isDimmerActive:  false,
-      isCinemaMode:    false,
-      hlsInstance:     null,
-      updateTimer:     null,
+      currentChannel: null,
+      playlist: [],
+      playlistIndex: -1,
+      isPlaying: false,
+      isMuted: false,
+      volume: this._opts.volume,
+      isDimmerActive: false,
+      isCinemaMode: false,
+      hlsInstance: null,
+      updateTimer: null,
     };
     this._dom = {};
     this._listeners = new Map();
@@ -68,39 +75,45 @@ class CinemaPlayer {
 
   init() {
     this._dom = {
-      videoEl:           this._q('#cp-video'),
-      audioEl:           this._q('#cp-audio'),
-      playerWrap:        this._q('#cinema-player-wrap'),
-      screenWrap:        this._q('#cp-screen-wrap'),
-      loadingOverlay:    this._q('#cp-loading'),
-      errorOverlay:      this._q('#cp-error'),
-      errorMsg:          this._q('#cp-error-msg'),
-      noSourceOverlay:   this._q('#cp-no-source'),
-      channelTitle:      this._q('#cp-channel-title'),
-      channelGroup:      this._q('#cp-channel-group'),
-      channelLogo:       this._q('#cp-channel-logo'),
-      liveBadge:         this._q('#cp-live-badge'),
-      streamType:        this._q('#cp-stream-type'),
-      btnPlayPause:      this._q('#cp-btn-play-pause'),
-      btnPrev:           this._q('#cp-btn-prev'),
-      btnNext:           this._q('#cp-btn-next'),
-      btnMute:           this._q('#cp-btn-mute'),
-      btnFullscreen:     this._q('#cp-btn-fullscreen'),
-      btnCinemaMode:     this._q('#cp-btn-cinema'),
-      btnSpeed:          this._q('#cp-btn-speed'),
-      iconPlay:          this._q('#cp-icon-play'),
-      iconPause:         this._q('#cp-icon-pause'),
-      iconVolume:        this._q('#cp-icon-volume'),
-      iconMuted:         this._q('#cp-icon-muted'),
-      progressContainer: this._q('#cp-progress-container'),
-      progressFill:      this._q('#cp-progress-fill'),
-      progressBuffer:    this._q('#cp-progress-buffer'),
-      progressThumb:     this._q('#cp-progress-thumb'),
-      timeCurrentEl:     this._q('#cp-time-current'),
-      timeTotalEl:       this._q('#cp-time-total'),
-      volumeSlider:      this._q('#cp-volume-slider'),
-      volumeBar:         this._q('#cp-volume-bar'),
-      dimmerEl:          this._q('#cinematic-dimmer'),
+      videoEl: this._q('#cp-video') || this._q('#video-player'),
+      audioEl: this._q('#cp-audio') || this._q('#audio-player'),
+      playerWrap: this._q('#cinema-player-wrap'),
+      screenWrap: this._q('#cp-screen-wrap'),
+      loadingOverlay: this._q('#cp-loading'),
+      errorOverlay: this._q('#cp-error'),
+      errorMsg: this._q('#cp-error-msg'),
+      noSourceOverlay: this._q('#cp-no-source'),
+
+      channelTitle: this._q('#cp-channel-title'),
+      channelGroup: this._q('#cp-channel-group'),
+      channelLogo: this._q('#cp-channel-logo'),
+      liveBadge: this._q('#cp-live-badge'),
+      streamType: this._q('#cp-stream-type'),
+
+      btnPlayPause: this._q('#cp-btn-play-pause') || this._q('#btn-play-pause'),
+      btnPrev: this._q('#cp-btn-prev') || this._q('#btn-prev'),
+      btnNext: this._q('#cp-btn-next') || this._q('#btn-next'),
+      btnMute: this._q('#cp-btn-mute') || this._q('#btn-mute'),
+      btnFullscreen: this._q('#cp-btn-fullscreen') || this._q('#btn-fullscreen'),
+      btnCinemaMode: this._q('#cp-btn-cinema'),
+      btnSpeed: this._q('#cp-btn-speed'),
+
+      iconPlay: this._q('#cp-icon-play') || this._q('#icon-play'),
+      iconPause: this._q('#cp-icon-pause') || this._q('#icon-pause'),
+      iconVolume: this._q('#cp-icon-volume') || this._q('#icon-volume'),
+      iconMuted: this._q('#cp-icon-muted') || this._q('#icon-muted'),
+
+      progressContainer: this._q('#cp-progress-container') || this._q('#progress-bar-container'),
+      progressFill: this._q('#cp-progress-fill') || this._q('#progress-bar-fill'),
+      progressBuffer: this._q('#cp-progress-buffer'),
+      progressThumb: this._q('#cp-progress-thumb') || this._q('#progress-thumb'),
+      timeCurrentEl: this._q('#cp-time-current'),
+      timeTotalEl: this._q('#cp-time-total'),
+
+      volumeSlider: this._q('#cp-volume-slider') || this._q('#player-volume'),
+      volumeBar: this._q('#cp-volume-bar'),
+
+      dimmerEl: this._q('#cinematic-dimmer'),
     };
 
     if (this._dom.volumeSlider) {
@@ -124,47 +137,45 @@ class CinemaPlayer {
     this._stopCurrentPlayback();
 
     this._state.currentChannel = channel;
-    this._state.playlist       = playlist;
-    this._state.playlistIndex  = index;
+    this._state.playlist = playlist;
+    this._state.playlistIndex = index;
 
-    const isAudioOnly = channel.streamType === 'audio';
-    const activeEl    = isAudioOnly ? this._dom.audioEl : this._dom.videoEl;
-    const inactiveEl  = isAudioOnly ? this._dom.videoEl : this._dom.audioEl;
+    const isAudioOnly = channel.type === 'audio' || channel.streamType === 'audio';
+    const activeEl = isAudioOnly ? this._dom.audioEl : this._dom.videoEl;
+    const inactiveEl = isAudioOnly ? this._dom.videoEl : this._dom.audioEl;
 
     this._dom.videoEl?.parentElement?.classList.toggle('hidden', isAudioOnly);
 
-    inactiveEl.pause();
-    inactiveEl.removeAttribute('src');
-    inactiveEl.load();
+    if (inactiveEl) {
+      inactiveEl.pause();
+      inactiveEl.removeAttribute('src');
+      inactiveEl.load();
+    }
 
     this._showLoading(true);
     this._showError(false);
 
-    if (channel.streamType === 'hls') {
+    const isHLS = channel.url.includes('.m3u8') || channel.streamType === 'hls';
+    if (isHLS) {
       this._setupHLSStream(channel.url, activeEl);
     } else {
       this._setupDirectStream(channel.url, activeEl);
     }
 
-    activeEl.volume = this._state.volume;
-    activeEl.muted  = this._state.isMuted;
-
-    this._updateChannelInfo(channel);
-
-    // MODO CINE INTELIGENTE: Si es vídeo se activa, si es audio se desactiva
-    if (!isAudioOnly) {
-      this._activateCinemaMode();
-    } else {
-      this._deactivateCinemaMode();
+    if (activeEl) {
+      activeEl.volume = this._state.volume;
+      activeEl.muted = this._state.isMuted;
+      this._bindMediaEvents(activeEl);
     }
 
+    this._updateChannelInfo(channel);
+    this._activateCinemaMode();
     this._emit('channelChange', channel);
-    this._bindMediaEvents(activeEl, isAudioOnly);
   }
 
   _setupHLSStream(url, videoEl) {
     if (typeof Hls === 'undefined') {
-      console.warn('[CinemaPlayer] hls.js no disponible. Usando nativo.');
+      console.warn('[CinemaPlayer] hls.js no está cargado. Intentando reproducción nativa.');
       this._setupDirectStream(url, videoEl);
       return;
     }
@@ -182,6 +193,7 @@ class CinemaPlayer {
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (data.fatal) {
+          console.error('[CinemaPlayer] Error fatal HLS:', data.type, data.details);
           this._handlePlaybackError(data.details);
         }
       });
@@ -189,11 +201,12 @@ class CinemaPlayer {
       videoEl.src = url;
       this._startPlayback(videoEl);
     } else {
-      this._handlePlaybackError('HLS no soportado en este navegador.');
+      this._handlePlaybackError('HLS no está soportado en este navegador.');
     }
   }
 
   _setupDirectStream(url, mediaEl) {
+    if (!mediaEl) return;
     mediaEl.src = url;
     mediaEl.load();
     this._startPlayback(mediaEl);
@@ -204,6 +217,7 @@ class CinemaPlayer {
     if (playPromise !== undefined) {
       playPromise.catch(err => {
         if (err.name === 'NotAllowedError') {
+          console.warn('[CinemaPlayer] Autoplay bloqueado.');
           this._setPlayingState(false);
           this._dom.noSourceOverlay?.classList.remove('hidden');
         } else {
@@ -236,14 +250,14 @@ class CinemaPlayer {
 
 
   /* ══════════════════════════════════════════════════════════
-     SECCIÓN 4 · CONTROLES
+     SECCIÓN 4 · CONTROLES DEL REPRODUCTOR
   ══════════════════════════════════════════════════════════ */
 
   togglePlay() {
     const el = this._getActiveMediaElement();
     if (!el) return;
     if (el.paused) {
-      el.play().catch(err => console.warn(err));
+      el.play().catch(console.warn);
     } else {
       el.pause();
     }
@@ -255,14 +269,13 @@ class CinemaPlayer {
     if (el) el.muted = this._state.isMuted;
 
     this._dom.iconVolume?.classList.toggle('hidden', this._state.isMuted);
-    this._dom.iconMuted?.classList.toggle('hidden',  !this._state.isMuted);
+    this._dom.iconMuted?.classList.toggle('hidden', !this._state.isMuted);
     this._emit('muteChange', this._state.isMuted);
   }
 
   setVolume(value) {
     const clamped = Math.min(1, Math.max(0, value));
     this._state.volume = clamped;
-
     const el = this._getActiveMediaElement();
     if (el) el.volume = clamped;
 
@@ -288,12 +301,14 @@ class CinemaPlayer {
   }
 
   prevChannel() {
-    const el  = this._getActiveMediaElement();
+    const el = this._getActiveMediaElement();
     const { playlist, playlistIndex } = this._state;
+
     if (el?.currentTime > 3 && isFinite(el.duration)) {
       el.currentTime = 0;
       return;
     }
+
     if (playlistIndex > 0) {
       const prev = playlistIndex - 1;
       this.playChannel(playlist[prev], playlist, prev);
@@ -304,9 +319,12 @@ class CinemaPlayer {
   cycleSpeed() {
     const el = this._getActiveMediaElement();
     if (!el) return;
+
     const speeds = [0.5, 1, 1.25, 1.5, 2];
-    const idx = speeds.findIndex(s => Math.abs(s - el.playbackRate) < 0.01);
+    const current = el.playbackRate;
+    const idx = speeds.findIndex(s => Math.abs(s - current) < 0.01);
     const next = speeds[(idx + 1) % speeds.length];
+
     el.playbackRate = next;
     if (this._dom.btnSpeed) this._dom.btnSpeed.textContent = `${next}x`;
     this._emit('speedChange', next);
@@ -315,8 +333,8 @@ class CinemaPlayer {
   requestFullscreen() {
     const el = this._dom.videoEl;
     if (!el) return;
-    const requestFn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-    requestFn?.call(el).catch(err => console.warn(err));
+    const requestFn = el.requestFullscreen ?? el.webkitRequestFullscreen ?? el.mozRequestFullScreen;
+    requestFn?.call(el).catch(console.warn);
   }
 
   toggleCinemaMode() {
@@ -333,35 +351,35 @@ class CinemaPlayer {
   _activateCinemaMode() {
     this._state.isDimmerActive = true;
     this._dom.dimmerEl?.classList.add('active');
-    document.body.classList.add('is-playing');
+    document.body.classList.add('is-playing', 'cinema-active');
     this._emit('dimmerActivated');
   }
 
   _deactivateCinemaMode() {
     this._state.isDimmerActive = false;
     this._dom.dimmerEl?.classList.remove('active');
-    document.body.classList.remove('is-playing');
+    document.body.classList.remove('is-playing', 'cinema-active');
     this._emit('dimmerDeactivated');
   }
 
 
   /* ══════════════════════════════════════════════════════════
-     SECCIÓN 6 · EVENTOS DOM Y MEDIA
+     SECCIÓN 6 · EVENTOS DOM
   ══════════════════════════════════════════════════════════ */
 
   _bindEvents() {
     this._dom.btnPlayPause?.addEventListener('click', () => this.togglePlay());
-    this._dom.btnPrev?.addEventListener('click',      () => this.prevChannel());
-    this._dom.btnNext?.addEventListener('click',      () => this.nextChannel());
-    this._dom.btnMute?.addEventListener('click',      () => this.toggleMute());
-    this._dom.btnFullscreen?.addEventListener('click',() => this.requestFullscreen());
-    this._dom.btnCinemaMode?.addEventListener('click',() => this.toggleCinemaMode());
-    this._dom.btnSpeed?.addEventListener('click',     () => this.cycleSpeed());
+    this._dom.btnPrev?.addEventListener('click', () => this.prevChannel());
+    this._dom.btnNext?.addEventListener('click', () => this.nextChannel());
+    this._dom.btnMute?.addEventListener('click', () => this.toggleMute());
+    this._dom.btnFullscreen?.addEventListener('click', () => this.requestFullscreen());
+    this._dom.btnCinemaMode?.addEventListener('click', () => this.toggleCinemaMode());
+    this._dom.btnSpeed?.addEventListener('click', () => this.cycleSpeed());
 
     this._dom.progressContainer?.addEventListener('click', (e) => {
       const rect = this._dom.progressContainer.getBoundingClientRect();
-      const pct  = (e.clientX - rect.left) / rect.width;
-      const el   = this._getActiveMediaElement();
+      const pct = (e.clientX - rect.left) / rect.width;
+      const el = this._getActiveMediaElement();
       if (el?.duration && isFinite(el.duration)) {
         el.currentTime = pct * el.duration;
       }
@@ -372,13 +390,9 @@ class CinemaPlayer {
     });
 
     this._dom.screenWrap?.addEventListener('click', () => this.togglePlay());
-    this._dom.screenWrap?.addEventListener('dblclick', () => this.requestFullscreen());
-
-    document.addEventListener('fullscreenchange',       () => this._onFullscreenChange());
-    document.addEventListener('webkitfullscreenchange', () => this._onFullscreenChange());
   }
 
-  _bindMediaEvents(el, isAudioOnly) {
+  _bindMediaEvents(el) {
     if (this._mediaAbortCtrl) this._mediaAbortCtrl.abort();
     this._mediaAbortCtrl = new AbortController();
     const { signal } = this._mediaAbortCtrl;
@@ -387,8 +401,6 @@ class CinemaPlayer {
       this._setPlayingState(true);
       this._showLoading(false);
       this._startProgressUpdater(el);
-      // Activar dimmer solo si no es solo audio
-      if (!isAudioOnly) this._activateCinemaMode();
     }, { signal });
 
     el.addEventListener('pause', () => {
@@ -403,7 +415,7 @@ class CinemaPlayer {
       this.nextChannel();
     }, { signal });
 
-    el.addEventListener('waiting', () => this._showLoading(true),  { signal });
+    el.addEventListener('waiting', () => this._showLoading(true), { signal });
     el.addEventListener('playing', () => this._showLoading(false), { signal });
     el.addEventListener('canplay', () => this._showLoading(false), { signal });
 
@@ -416,8 +428,7 @@ class CinemaPlayer {
     }, { signal });
 
     el.addEventListener('error', () => {
-      const errMsg = this._getMediaErrorMessage(el.error);
-      this._handlePlaybackError(errMsg);
+      this._handlePlaybackError(this._getMediaErrorMessage(el.error));
     }, { signal });
   }
 
@@ -466,43 +477,47 @@ class CinemaPlayer {
 
 
   /* ══════════════════════════════════════════════════════════
-     SECCIÓN 7 · ACTUALIZACIÓN DE LA UI Y ESTADOS
+     SECCIÓN 7 · ACTUALIZACIÓN DE LA UI
   ══════════════════════════════════════════════════════════ */
 
   _setPlayingState(playing) {
     this._state.isPlaying = playing;
-    this._dom.iconPlay?.classList.toggle('hidden',  playing);
+    this._dom.iconPlay?.classList.toggle('hidden', playing);
     this._dom.iconPause?.classList.toggle('hidden', !playing);
   }
 
   _showLoading(show) {
     this._dom.loadingOverlay?.classList.toggle('hidden', !show);
+    this._dom.noSourceOverlay?.classList.toggle('hidden', show || !!this._state.currentChannel);
   }
 
   _showError(show, msg = '') {
     this._dom.errorOverlay?.classList.toggle('hidden', !show);
+    this._dom.loadingOverlay?.classList.toggle('hidden', true);
     if (this._dom.errorMsg && msg) this._dom.errorMsg.textContent = msg;
   }
 
   _handlePlaybackError(message) {
     console.error('[CinemaPlayer] Error:', message);
-    this._showError(true, `Error: ${message}`);
+    this._showError(true, message);
     this._setPlayingState(false);
     this._deactivateCinemaMode();
   }
 
   _updateChannelInfo(channel) {
-    if (this._dom.channelTitle)  this._dom.channelTitle.textContent = channel.name || '';
-    if (this._dom.channelGroup)  this._dom.channelGroup.textContent = channel.group || '';
+    if (this._dom.channelTitle) this._dom.channelTitle.textContent = channel.title || '';
+    if (this._dom.channelGroup) this._dom.channelGroup.textContent = channel.group || channel.category || '';
 
     if (this._dom.channelLogo) {
-      if (channel.logo) {
-        this._dom.channelLogo.src = channel.logo;
+      if (channel.logo || channel.thumb) {
+        this._dom.channelLogo.src = channel.logo || channel.thumb;
         this._dom.channelLogo.classList.remove('hidden');
       } else {
         this._dom.channelLogo.classList.add('hidden');
       }
     }
+
+    document.title = `▶ ${channel.title} — Castify`;
   }
 
   _startProgressUpdater(el) {
@@ -510,7 +525,7 @@ class CinemaPlayer {
     this._state.updateTimer = setInterval(() => {
       if (!el.duration || !isFinite(el.duration)) return;
       const pct = (el.currentTime / el.duration) * 100;
-      if (this._dom.progressFill)  this._dom.progressFill.style.width = `${pct}%`;
+      if (this._dom.progressFill) this._dom.progressFill.style.width = `${pct}%`;
       if (this._dom.progressThumb) this._dom.progressThumb.style.left = `${pct}%`;
       if (this._dom.timeCurrentEl) this._dom.timeCurrentEl.textContent = this._formatTime(el.currentTime);
     }, 500);
@@ -547,14 +562,9 @@ class CinemaPlayer {
     }
   }
 
-  _onFullscreenChange() {
-    const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-    this._dom.playerWrap?.classList.toggle('is-fullscreen', isFs);
-  }
-
 
   /* ══════════════════════════════════════════════════════════
-     SECCIÓN 8 · UTILIDADES Y EVENTOS
+     SECCIÓN 8 · SISTEMA DE EVENTOS
   ══════════════════════════════════════════════════════════ */
 
   on(event, callback) {
@@ -571,11 +581,15 @@ class CinemaPlayer {
     });
   }
 
+
+  /* ══════════════════════════════════════════════════════════
+     SECCIÓN 9 · UTILIDADES
+  ══════════════════════════════════════════════════════════ */
+
   _getActiveMediaElement() {
-    if (this._dom.audioEl?.src && !this._dom.audioEl?.paused) {
-      return this._dom.audioEl;
-    }
-    return this._dom.videoEl ?? null;
+    if (this._dom.audioEl?.src && !this._dom.audioEl?.paused) return this._dom.audioEl;
+    if (this._dom.videoEl?.src) return this._dom.videoEl;
+    return this._dom.audioEl || this._dom.videoEl || null;
   }
 
   _formatTime(seconds) {
@@ -589,26 +603,26 @@ class CinemaPlayer {
   _getMediaErrorMessage(error) {
     if (!error) return 'Error desconocido.';
     const messages = {
-      [MediaError.MEDIA_ERR_ABORTED]:    'Reproducción cancelada.',
-      [MediaError.MEDIA_ERR_NETWORK]:    'Error de red.',
-      [MediaError.MEDIA_ERR_DECODE]:     'Formato incompatible.',
-      [MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED]: 'URL no válida o stream no disponible.',
+      [MediaError.MEDIA_ERR_ABORTED]: 'Reproducción cancelada.',
+      [MediaError.MEDIA_ERR_NETWORK]: 'Error de red en el stream.',
+      [MediaError.MEDIA_ERR_DECODE]: 'Error de decodificación.',
+      [MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED]: 'Stream no soportado o caído.',
     };
-    return messages[error.code] ?? `Error de reproducción (${error.code}).`;
+    return messages[error.code] ?? 'Error de reproducción.';
   }
 
   _q(selector) {
-    const el = document.querySelector(selector);
-    if (!el) console.warn(`[CinemaPlayer] Elemento no encontrado: "${selector}"`);
-    return el;
+    return document.querySelector(selector);
   }
 
-  get currentChannel()  { return this._state.currentChannel; }
-  get isPlaying()       { return this._state.isPlaying; }
-  get volume()          { return this._state.volume; }
-  get playlist()        { return [...this._state.playlist]; }
-  get currentIndex()    { return this._state.playlistIndex; }
+  get currentChannel() { return this._state.currentChannel; }
+  get isPlaying() { return this._state.isPlaying; }
+  get volume() { return this._state.volume; }
+  get playlist() { return [...this._state.playlist]; }
+  get currentIndex() { return this._state.playlistIndex; }
 }
 
-// Instancia global compartida
+/* ─────────────────────────────────────────────────────────────────
+   EXPORTAR INSTANCIA GLOBAL
+───────────────────────────────────────────────────────────────── */
 window.cinemaPlayer = new CinemaPlayer();
