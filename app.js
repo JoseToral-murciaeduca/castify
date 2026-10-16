@@ -425,19 +425,19 @@ const CinemaStream = {
 
   player: {
     togglePlay() {
-      window.cinemaPlayer?.togglePlay();
+      PlayerEngine.togglePlay();
     },
     next() {
-      window.cinemaPlayer?.nextChannel();
+      PlayerEngine.next();
     },
     prev() {
-      window.cinemaPlayer?.prevChannel();
+      PlayerEngine.prev();
     },
     toggleMute(){
-      window.cinemaPlayer?.toggleMute();
+      PlayerEngine.toggleMute();
     },
     requestFullscreen() {
-      window.cinemaPlayer?.requestFullscreen();
+      PlayerEngine.requestFullscreen();
     }
   },
 
