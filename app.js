@@ -304,24 +304,6 @@ const M3UModule = {
     document.getElementById('m3u-btn-load-url')?.addEventListener('click', () => CinemaStream.loadM3UFromUrl());
   },
 
-  player: {
-    togglePlay() {
-      window.cinemaPlayer?.togglePlay();
-    },
-    next() {
-      window.cinemaPlayer?.nextChannel();
-    },
-    prev() {
-      window.cinemaPlayer?.prevChannel();
-    },
-    toggleMute(){
-      window.cinemaPlayer?.toggleMute();
-    },
-    requestFullscreen() {
-      window.cinemaPlayer?.requestFullscreen();
-    }
-  },
-
   _switchTab(target) {
     document.querySelectorAll('.m3u-tab, .m3u-import-tab').forEach(t => t.classList.toggle('active', t.dataset.target === target));
     document.getElementById('m3u-url-panel')?.classList.toggle('hidden', target !== 'url');
@@ -418,6 +400,11 @@ const Renderer = {
 
 const CinemaStream = {
   init() {
+    if (window.CinemaPlayer) {
+      window.cinemaPlayer.init();
+      this.PlayerEngine = window.cinemaPlayer;
+    }
+
     Navigation.init();
     M3UModule.init();
 
@@ -430,6 +417,24 @@ const CinemaStream = {
     if (tvGrid) tvGrid.innerHTML = DATA.tvChannels.map(Renderer.renderCard).join('');
     if (radioGrid) radioGrid.innerHTML = DATA.radioStations.map(Renderer.renderCard).join('');
     if (podcastList) podcastList.innerHTML = DATA.podcasts.map(Renderer.renderCard).join('');
+  },
+
+  player: {
+    togglePlay() {
+      window.cinemaPlayer?.togglePlay();
+    },
+    next() {
+      window.cinemaPlayer?.nextChannel();
+    },
+    prev() {
+      window.cinemaPlayer?.prevChannel();
+    },
+    toggleMute(){
+      window.cinemaPlayer?.toggleMute();
+    },
+    requestFullscreen() {
+      window.cinemaPlayer?.requestFullscreen();
+    }
   },
 
   playItem(id) {
