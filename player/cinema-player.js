@@ -75,6 +75,7 @@ class CinemaPlayer {
 
   init() {
     this._dom = {
+      // Elementos multimedia nativos
       videoEl: this._q('#cp-video') || this._q('#video-player'),
       audioEl: this._q('#cp-audio') || this._q('#audio-player'),
       playerWrap: this._q('#cinema-player-wrap'),
@@ -84,12 +85,14 @@ class CinemaPlayer {
       errorMsg: this._q('#cp-error-msg'),
       noSourceOverlay: this._q('#cp-no-source'),
 
+      // Información del canal
       channelTitle: this._q('#cp-channel-title'),
       channelGroup: this._q('#cp-channel-group'),
       channelLogo: this._q('#cp-channel-logo'),
       liveBadge: this._q('#cp-live-badge'),
       streamType: this._q('#cp-stream-type'),
 
+      // Botones unificados (busca tanto el prefijo cp- como los globales de la barra inferior)
       btnPlayPause: this._q('#cp-btn-play-pause') || this._q('#btn-play-pause'),
       btnPrev: this._q('#cp-btn-prev') || this._q('#btn-prev'),
       btnNext: this._q('#cp-btn-next') || this._q('#btn-next'),
@@ -98,11 +101,13 @@ class CinemaPlayer {
       btnCinemaMode: this._q('#cp-btn-cinema'),
       btnSpeed: this._q('#cp-btn-speed'),
 
+      // Iconos de estado
       iconPlay: this._q('#cp-icon-play') || this._q('#icon-play'),
       iconPause: this._q('#cp-icon-pause') || this._q('#icon-pause'),
       iconVolume: this._q('#cp-icon-volume') || this._q('#icon-volume'),
       iconMuted: this._q('#cp-icon-muted') || this._q('#icon-muted'),
 
+      // Progreso y tiempos
       progressContainer: this._q('#cp-progress-container') || this._q('#progress-bar-container'),
       progressFill: this._q('#cp-progress-fill') || this._q('#progress-bar-fill'),
       progressBuffer: this._q('#cp-progress-buffer'),
@@ -110,6 +115,7 @@ class CinemaPlayer {
       timeCurrentEl: this._q('#cp-time-current'),
       timeTotalEl: this._q('#cp-time-total'),
 
+      // Sliders de volumen
       volumeSlider: this._q('#cp-volume-slider') || this._q('#player-volume'),
       volumeBar: this._q('#cp-volume-bar'),
 
@@ -124,7 +130,7 @@ class CinemaPlayer {
     this._bindEvents();
     this._bindKeyboard();
 
-    console.info('[CinemaPlayer] ✓ Inicializado y listo.');
+    console.info('[CinemaPlayer] ✓ Inicializado con selectores unificados.');
     return this;
   }
 
@@ -375,6 +381,10 @@ class CinemaPlayer {
     this._dom.btnFullscreen?.addEventListener('click', () => this.requestFullscreen());
     this._dom.btnCinemaMode?.addEventListener('click', () => this.toggleCinemaMode());
     this._dom.btnSpeed?.addEventListener('click', () => this.cycleSpeed());
+    // Doble enlace para asegurar eventos globales y locales
+    document.getElementById('btn-play-pause')?.addEventListener('click', () => this.togglePlay());
+    document.getElementById('btn-mute')?.addEventListener('click', () => this.toggleMute());
+    document.getElementById('btn-fullscreen')?.addEventListener('click', () => this.requestFullscreen());
 
     this._dom.progressContainer?.addEventListener('click', (e) => {
       const rect = this._dom.progressContainer.getBoundingClientRect();
