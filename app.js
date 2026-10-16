@@ -7,7 +7,7 @@ const DATA = {
   tvChannels: [
     { id: 'tv1', title: 'La 1', category: 'Nacional', logo: 'https://scontent.frmu1-1.fna.fbcdn.net/v/t39.30808-1/768537402_1611952793634767_3240080017570276969_n.jpg?stp=c569.554.910.909a_dst-jpg_s200x200_tt6&_nc_cat=1&ccb=1-7&_nc_sid=08baa4&_nc_ohc=-QW0K3Zc2vEQ7kNvwGTqFdc&_nc_oc=AdqRfZc80zJitwAxnoWcmEc3uBqY1bIuAcEHLwn73rfiwqRPV2soyEmLBnVYIHjfxW8&_nc_zt=24&_nc_ht=scontent.frmu1-1.fna&edm=AKsJ254EAAAA&_nc_gid=ozw0bgsDtZ9Kk1StnRBnaA&oh=00_AQPZElQN-1YnIIe30aCS2VRQhPdo_pycJpVw4AT9BMMibQ&oe=6AD85531', thumb: 'https://scontent.frmu1-1.fna.fbcdn.net/v/t39.30808-1/768537402_1611952793634767_3240080017570276969_n.jpg?stp=c569.554.910.909a_dst-jpg_s200x200_tt6&_nc_cat=1&ccb=1-7&_nc_sid=08baa4&_nc_ohc=-QW0K3Zc2vEQ7kNvwGTqFdc&_nc_oc=AdqRfZc80zJitwAxnoWcmEc3uBqY1bIuAcEHLwn73rfiwqRPV2soyEmLBnVYIHjfxW8&_nc_zt=24&_nc_ht=scontent.frmu1-1.fna&edm=AKsJ254EAAAA&_nc_gid=ozw0bgsDtZ9Kk1StnRBnaA&oh=00_AQPZElQN-1YnIIe30aCS2VRQhPdo_pycJpVw4AT9BMMibQ&oe=6AD85531', url: 'https://rtvelivestream.rtve.es/rtvesec/la1/la1_main_dvr.m3u8', type: 'video', live: true, viewers: '12.4K' },
     { id: 'tv2', title: 'Deportes Total', category: 'Deportes', logo: 'https://placehold.co/80x80/1A1620/F5A623?text=DT', thumb: 'https://placehold.co/480x270/1A1620/F5A623?text=Deportes+Total', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', type: 'video', live: true, viewers: '8.1K' },
-    { id: 'tv3', title: 'Cine Clásico', category: 'Entretenimiento', logo: 'https://placehold.co/80x80/1A1620/F5A623?text=CC', thumb: 'https://placehold.co/480x270/1A1620/F5A623?text=Cine+Clásico', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', type: 'video', live: true, viewers: '3.7K' },
+    { id: 'tv3', title: 'Cine Clásico', category: 'Entretenimiento', logo: 'https://placehold.co/80x80/1A1620/F5A623?text=CC', thumb: 'https://placehold.co/480x270/1A1620/F5A623?text=Cine+Cl%C3%A1sico', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', type: 'video', live: true, viewers: '3.7K' },
     { id: 'tv4', title: 'Documental HD', category: 'Documentales', logo: 'https://placehold.co/80x80/1A1620/F5A623?text=DC', thumb: 'https://placehold.co/480x270/1A1620/F5A623?text=Documental+HD', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4', type: 'video', live: true, viewers: '2.2K' }
   ],
   radioStations: [
@@ -290,23 +290,6 @@ const M3UModule = {
       this.player = window.cinemaPlayer;
     }
 
-    Navigation.init();
-    M3UModule.init();
-
-    const feat = document.getElementById('featured-channels');
-    const tvGrid = document.getElementById('tv-channels-grid') || document.getElementById('tv-grid');
-    const radioGrid = document.getElementById('radio-grid');
-    const podcastList = document.getElementById('podcasts-list') || document.getElementById('podcast-list');
-
-    if (feat) feat.innerHTML = DATA.tvChannels.map(Renderer.renderCard).join('');
-    if (tvGrid) tvGrid.innerHTML = DATA.tvChannels.map(Renderer.renderCard).join('');
-    if (radioGrid) radioGrid.innerHTML = DATA.radioStations.map(Renderer.renderCard).join('');
-    if (podcastList) podcastList.innerHTML = DATA.podcasts.map(Renderer.renderCard).join('');
-
-  
-    
-    
-    
     document.querySelectorAll('.m3u-tab, .m3u-import-tab').forEach(tab => {
       tab.addEventListener('click', () => this._switchTab(tab.dataset.target));
     });
@@ -453,7 +436,7 @@ const CinemaStream = {
     const all = [...DATA.tvChannels, ...DATA.radioStations, ...DATA.podcasts];
     const item = all.find(i => i.id === id);
     if (item && window.cinemaPlayer) {
-      window.cinemaPlayer.playChannel(item,  all,  all.indexOf(item));
+      window.cinemaPlayer.playChannel(item, all, all.indexOf(item));
     }
   },
 
