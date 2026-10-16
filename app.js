@@ -5,7 +5,7 @@
 
 const DATA = {
   tvChannels: [
-    { id: 'tv1', title: 'Noticias 24', category: 'Noticias', logo: 'https://placehold.co/80x80/1A1620/F5A623?text=N24', thumb: 'https://placehold.co/480x270/1A1620/F5A623?text=Noticias+24', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', type: 'video', live: true, viewers: '12.4K' },
+    { id: 'tv1', title: 'La 1', category: 'Noticias', logo: 'https://scontent.frmu1-1.fna.fbcdn.net/v/t39.30808-1/768537402_1611952793634767_3240080017570276969_n.jpg?stp=c569.554.910.909a_dst-jpg_s200x200_tt6&_nc_cat=1&ccb=1-7&_nc_sid=08baa4&_nc_ohc=-QW0K3Zc2vEQ7kNvwGTqFdc&_nc_oc=AdqRfZc80zJitwAxnoWcmEc3uBqY1bIuAcEHLwn73rfiwqRPV2soyEmLBnVYIHjfxW8&_nc_zt=24&_nc_ht=scontent.frmu1-1.fna&edm=AKsJ254EAAAA&_nc_gid=ozw0bgsDtZ9Kk1StnRBnaA&oh=00_AQPZElQN-1YnIIe30aCS2VRQhPdo_pycJpVw4AT9BMMibQ&oe=6AD85531', thumb: 'https://placehold.co/480x270/1A1620/F5A623?text=Noticias+24', url: 'https://rtvelivestream.rtve.es/rtvesec/la1/la1_main_dvr.m3u8', type: 'video', live: true, viewers: '12.4K' },
     { id: 'tv2', title: 'Deportes Total', category: 'Deportes', logo: 'https://placehold.co/80x80/1A1620/F5A623?text=DT', thumb: 'https://placehold.co/480x270/1A1620/F5A623?text=Deportes+Total', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4', type: 'video', live: true, viewers: '8.1K' },
     { id: 'tv3', title: 'Cine Clásico', category: 'Entretenimiento', logo: 'https://placehold.co/80x80/1A1620/F5A623?text=CC', thumb: 'https://placehold.co/480x270/1A1620/F5A623?text=Cine+Clásico', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4', type: 'video', live: true, viewers: '3.7K' }
   ],
