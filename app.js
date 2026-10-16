@@ -285,14 +285,14 @@ const M3UModule = {
   _playlist: [],
 
   init() {
-    if (window.cinemaPlayer){
+    if (window.cinemaPlayer) {
       window.cinemaPlayer.init();
       this.player = window.cinemaPlayer;
     }
-    
+
     Navigation.init();
     M3UModule.init();
-    
+
     const feat = document.getElementById('featured-channels');
     const tvGrid = document.getElementById('tv-channels-grid') || document.getElementById('tv-grid');
     const radioGrid = document.getElementById('radio-grid');
@@ -302,6 +302,10 @@ const M3UModule = {
     if (tvGrid) tvGrid.innerHTML = DATA.tvChannels.map(Renderer.renderCard).join('');
     if (radioGrid) radioGrid.innerHTML = DATA.radioStations.map(Renderer.renderCard).join('');
     if (podcastList) podcastList.innerHTML = DATA.podcasts.map(Renderer.renderCard).join('');
+
+  
+    
+    
     
     document.querySelectorAll('.m3u-tab, .m3u-import-tab').forEach(tab => {
       tab.addEventListener('click', () => this._switchTab(tab.dataset.target));
@@ -315,6 +319,24 @@ const M3UModule = {
 
     document.getElementById('btn-load-url')?.addEventListener('click', () => CinemaStream.loadM3UFromUrl());
     document.getElementById('m3u-btn-load-url')?.addEventListener('click', () => CinemaStream.loadM3UFromUrl());
+  },
+
+  player: {
+    togglePlay() {
+      window.cinemaPlayer?.togglePlay();
+    },
+    next() {
+      window.cinemaPlayer?.nextChannel();
+    },
+    prev() {
+      window.cinemaPlayer?.prevChannel();
+    },
+    toggleMute(){
+      window.cinemaPlayer?.toggleMute();
+    },
+    requestFullscreen() {
+      window.cinemaPlayer?.requestFullscreen();
+    }
   },
 
   _switchTab(target) {
