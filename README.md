@@ -44,7 +44,7 @@ Diseñada con un enfoque **Vanilla JS puro**, garantiza un rendimiento óptimo, 
 
 ## 🖥️ Demostración
 
-``text
+```text
 +-------------------------------------------------------------------------+
 | [≡] Castify           [ Buscar canales... ]                (CS) Profile |
 +-------------------------------------------------------------------------+
@@ -56,7 +56,7 @@ Diseñada con un enfoque **Vanilla JS puro**, garantiza un rendimiento óptimo, 
 |  [Ajustes]      |   +-------------------------------------------------+ |
 |                 |   [ ► ] [ ◄◄ ] [ ►► ] [ 🔊 ===== ]    02:15 / 45:00   |
 +-------------------------------------------------------------------------+
-``
+```
 🚀 Instalación Rápida
 Al no requerir compilación ni empaquetadores (Node.js/Webpack), desplegar Castify es rápido y sencillo.
 
@@ -74,7 +74,7 @@ Visita `http://localhost:8080` en tu navegador.
 
 📁 Arquitectura del Proyecto
 El proyecto sigue una arquitectura modular limpia orientada a objetos de configuración e instancias globales con responsabilidades únicas:
-``Bash
+```Text
 +----------------------------------------------------------------------------------------+
 | castify/                                                                               |
 | ├── index.html            # Estructura principal SPA y layouts de Tailwind             |
@@ -85,12 +85,12 @@ El proyecto sigue una arquitectura modular limpia orientada a objetos de configu
 | ├── epg-engine.js         # Motor de procesamiento XMLTV para la guía de programación  |
 | └── m3u-parser.js         # Parser optimizado para metadatos #EXTINF y cabecera M3U    |
 +----------------------------------------------------------------------------------------+
-``
+```
 
 Módulos ClaveMóduloArchivoResponsabilidadCinemaStreamapp.jsControlador principal de la aplicación e inicializador SPA.PlayerEngineapp.jsGestión de eventos de reproducción HTML5/HLS, volumen y barra flotante.EPGEngineepg-engine.jsDescarga, parseo XMLTV y vinculación de horarios de programación EPG.PlaylistUIplaylist-ui.jsRenderizado por grupos, filtrado A-Z, búsqueda en listas e interacción.M3UParserm3u-parser.jsParsing eficiente de listas M3U/M3U8 y extracción de url-tvg.
 
 ⌨️ Atajos de Teclado del Reproductor
-``Bash
+```Text
 +-------------------------------------------------------------------------+
 |              Tecla            |                   Acción                |
 +-------------------------------------------------------------------------+
@@ -101,7 +101,7 @@ Módulos ClaveMóduloArchivoResponsabilidadCinemaStreamapp.jsControlador princip
 |   F                           | Alternar pantalla completa              |
 |   C                           | Activar / Desactivar modo cine (Dimmer) |
 +-------------------------------------------------------------------------+
-``
+```
 ## 🛠️ Tecnologías Utilizadas
 
 Castify ha sido desarrollada con tecnologías web modernas, ligeras y con rendimiento nativo en el navegador, sin necesidad de frameworks pesados:
