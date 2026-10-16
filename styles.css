@@ -83,12 +83,7 @@ body {
 }
 
 /* ── 6. Cinematic Dimmer ──────────────────────────────── */
-#cinematic-dimmer.active {
-  background: rgba(0, 0, 0, 0.55);
-  pointer-events: none;
-}
 
-/* When playing: sidebar items glow */
 body.is-playing .nav-item.active {
   text-shadow: 0 0 12px var(--color-amber);
   box-shadow: inset 0 0 20px rgba(245, 166, 35, 0.08);

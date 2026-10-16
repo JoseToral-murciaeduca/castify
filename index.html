@@ -74,29 +74,26 @@
   <!-- ═══════════════════════════════════════════
        CINEMATIC DIMMER OVERLAY
   ══════════════════════════════════════════════ -->
-  <div id="cinematic-dimmer"
-       class="fixed inset-0 bg-black/0 pointer-events-none z-40 transition-all duration-700 ease-in-out"
-       aria-hidden="true"></div>
   
   <script>
     const videoplayer = document.getElementById('my-video');
     const audioplayer = document.getElementById('my-audio');
     
     videoplayer.addEventListener('play',() => {
-      document.body.classList.add('cinematic-dimmer.active');
+      document.body.classList.add('cinema-active');
     });
     
     videoplayer.addEventListener('pause',() => {
-      document.body.classList.remove('cinematic-dimmer.active');
+      document.body.classList.remove('cinema-active');
     });
     
     videoplayer.addEventListener('ended',() => {
-      document.body.classList.remove('cinematic-dimmer.active');
+      document.body.classList.remove('cinema-active');
     });
     
     // Evento cuando reproduce AUDIO (Radio / Podcast) -> NO activa el modo cine
     audioplayer.addEventListener('play',() => {
-      document.body.classList.remove('cinematic-dimmer.active');
+      document.body.classList.remove('cinema-active');
     });
     
   </script>
